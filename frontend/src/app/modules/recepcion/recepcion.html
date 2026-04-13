@@ -1,0 +1,68 @@
+<div class="recepcion-container">
+  <aside class="ticket-panel">
+    <div class="ticket-header">
+      <h2>Ticket de Pacientes</h2>
+    </div>
+
+    <div class="ticket-actual-card">
+      <span>Atendiendo ahora:</span>
+      <h1>{{ ticketActual }}</h1>
+      <button class="btn-primary">Finalizar Atención</button>
+    </div>
+
+    <div class="ticket-queue">
+      <h3>Siguientes en cola:</h3>
+      <div class="queue-item" *ngFor="let ticket of ticketsEnEspera">
+        <div class="ticket-info">
+          <strong>{{ ticket.numero }}</strong>
+        </div>
+        <button class="btn-outline-small">Llamar</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="gestion-panel">
+    <div class="gestion-header">
+      <h3>Fecha: </h3>
+      <p class="text-muted">Seleccione una opción para continuar con la atención</p>
+    </div>
+
+    <div class="action-cards-grid">
+      <div class="action-card">
+        <div class="action-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M2 15h10"></path>
+            <path d="m9 18 3-3-3-3"></path>
+          </svg>
+        </div>
+        <div class="action-content">
+          <h4>Historia Clínica</h4>
+          <p>Buscar paciente existente o aperturar una nueva historia clínica en el sistema.</p>
+        </div>
+      </div>
+
+      <div class="action-card">
+        <div class="action-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <path d="M8 14h.01"></path>
+            <path d="M12 14h.01"></path>
+            <path d="M16 14h.01"></path>
+            <path d="M8 18h.01"></path>
+            <path d="M12 18h.01"></path>
+            <path d="M16 18h.01"></path>
+          </svg>
+        </div>
+        <div class="action-content">
+          <h4>Agendar Cita</h4>
+          <p>Asignar especialidad, seleccionar médico disponible y generar orden de pago.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
