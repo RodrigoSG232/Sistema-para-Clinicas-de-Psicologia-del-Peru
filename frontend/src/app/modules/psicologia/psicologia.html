@@ -7,33 +7,48 @@
     </div>
 
     <div class="queue-list">
-      <div class="queue-item" *ngFor="let p of pacientesAgenda" (click)="atenderPaciente(p)" [class.active-item]="pacienteActivo?.hc === p.hc">
+      <div class="queue-item active-item">
         <div class="queue-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         </div>
         <div class="queue-info">
-          <strong>{{ p.nombre }}</strong>
-          <span class="text-muted">HC: {{ p.hc }} | {{ p.estado }}</span>
+          <strong>Juan Pérez</strong>
+          <span class="text-muted">HC: 1001 | En consulta</span>
         </div>
-        <button class="btn-outline-small" *ngIf="pacienteActivo?.hc !== p.hc">Llamar</button>
+      </div>
+
+      <div class="queue-item">
+        <div class="queue-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <div class="queue-info">
+          <strong>María Gómez</strong>
+          <span class="text-muted">HC: 1002 | En espera</span>
+        </div>
+        <button class="btn-outline-small">Llamar</button>
+      </div>
+
+      <div class="queue-item">
+        <div class="queue-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <div class="queue-info">
+          <strong>Carlos Ruiz</strong>
+          <span class="text-muted">HC: 1003 | En espera</span>
+        </div>
+        <button class="btn-outline-small">Llamar</button>
       </div>
     </div>
   </aside>
 
   <main class="clinical-panel">
     
-    <div class="empty-state" *ngIf="!pacienteActivo">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      <h3>Ningún paciente en consulta</h3>
-      <p class="text-muted">Seleccione un paciente de su agenda para iniciar la atención clínica.</p>
-    </div>
-
-    <div class="session-active" *ngIf="pacienteActivo">
+    <div class="session-active">
       
       <div class="patient-header card">
         <div class="patient-title">
-          <h2>{{ pacienteActivo.nombre }}</h2>
-          <span class="hc-badge">Historia: {{ pacienteActivo.hc }}</span>
+          <h2>Juan Pérez</h2>
+          <span class="hc-badge">Historia: 1001</span>
         </div>
         <button class="btn-secondary">Ver Historial Clínico Completo</button>
       </div>
@@ -45,16 +60,17 @@
             <p class="text-muted">Actualice esta fase únicamente cuando el paciente avance a la siguiente etapa (Semanas/Meses).</p>
           </div>
           <div class="phase-selector">
-            <select [(ngModel)]="pacienteActivo.faseActual">
-              <option *ngFor="let fase of fasesUNIR" [value]="fase.id">
-                {{ fase.titulo }}
-              </option>
+            <select>
+              <option value="1">Fase 1: Evaluación</option>
+              <option value="2" selected>Fase 2: Explicación de Hipótesis</option>
+              <option value="3">Fase 3: Tratamiento</option>
+              <option value="4">Fase 4: Seguimiento</option>
             </select>
           </div>
         </div>
         <div class="phase-description">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          {{ fasesUNIR[pacienteActivo.faseActual].desc }}
+          En esta fase se explican los resultados de la evaluación al paciente y se establecen los objetivos terapéuticos en conjunto.
         </div>
       </div>
 
@@ -64,9 +80,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
             <h3>Evolución de la Sesión (Hoy)</h3>
           </div>
-          <textarea class="clinical-textarea" 
-                    [(ngModel)]="notasSesion" 
-                    placeholder="Registre observaciones, técnicas aplicadas hoy, avances o retrocesos notados durante la sesión actual..."></textarea>
+          <textarea class="clinical-textarea" placeholder="Registre observaciones, técnicas aplicadas hoy, avances o retrocesos notados durante la sesión actual..."></textarea>
         </div>
 
         <div class="form-card card treatment-bg">
@@ -74,14 +88,12 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
             <h3>Indicaciones para el Paciente</h3>
           </div>
-          <textarea class="clinical-textarea treatment-input" 
-                    [(ngModel)]="tareasAsignadas" 
-                    placeholder="Tareas, lecturas, autorregistros conductuales o ejercicios para realizar en casa hasta la próxima sesión..."></textarea>
+          <textarea class="clinical-textarea treatment-input" placeholder="Tareas, lecturas, autorregistros conductuales o ejercicios para realizar en casa hasta la próxima sesión..."></textarea>
         </div>
       </div>
 
       <div class="action-footer">
-        <button class="btn-primary btn-large" (click)="finalizarSesion()">
+        <button class="btn-primary btn-large">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
           Guardar Sesión e Imprimir Indicaciones
         </button>

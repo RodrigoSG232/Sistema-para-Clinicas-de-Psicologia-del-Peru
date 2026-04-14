@@ -10,11 +10,5 @@ import { Router } from '@angular/router';
   
 })
 export class Topbar {
-
-  constructor(private router: Router) {}
-
-  onLogout() {
-    this.router.navigate(['/login']); 
-  }
 }
 

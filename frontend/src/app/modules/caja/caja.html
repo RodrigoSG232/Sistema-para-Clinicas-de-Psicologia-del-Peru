@@ -31,7 +31,7 @@
     </div>
   </div>
 
-  <div class="card table-section" *ngIf="!deudaSeleccionada">
+  <div class="card table-section">
     <h3>Resultados de Búsqueda</h3>
     <div class="table-responsive">
       <table class="data-table">
@@ -54,7 +54,7 @@
             <td>Psicología Clínica</td>
             <td class="amount-cell">S/ 80.00</td>
             <td>
-              <button class="btn-outline-small" (click)="cobrarDeuda()">Cobrar</button>
+              <button class="btn-outline-small">Cobrar</button>
             </td>
           </tr>
         </tbody>
@@ -62,19 +62,19 @@
     </div>
   </div>
 
-  <div class="card payment-section" *ngIf="deudaSeleccionada">
+  <div class="card payment-section">
     <div class="payment-header">
       <div>
         <h3>Procesar Pago</h3>
-        <p class="text-muted">Paciente: <strong>{{ deudaSeleccionada.paciente }}</strong> | Concepto: {{ deudaSeleccionada.concepto }}</p>
+        <p class="text-muted">Paciente: <strong>María González Pérez</strong> | Concepto: Gastos de cita</p>
       </div>
       <div class="total-amount">
-        <h2>{{ deudaSeleccionada.monto }}</h2>
+        <h2>S/ 80.00</h2>
       </div>
     </div>
 
     <div class="payment-methods-grid">
-      <div class="payment-card" [class.active]="metodoPago === 'efectivo'" (click)="seleccionarMetodo('efectivo')">
+      <div class="payment-card active">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="6" width="20" height="12" rx="2"></rect>
           <circle cx="12" cy="12" r="2"></circle>
@@ -83,7 +83,7 @@
         <span>Efectivo</span>
       </div>
       
-      <div class="payment-card" [class.active]="metodoPago === 'tarjeta'" (click)="seleccionarMetodo('tarjeta')">
+      <div class="payment-card">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
           <line x1="1" y1="10" x2="23" y2="10"></line>
@@ -91,7 +91,7 @@
         <span>Tarjeta</span>
       </div>
 
-      <div class="payment-card" [class.active]="metodoPago === 'digital'" (click)="seleccionarMetodo('digital')">
+      <div class="payment-card">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
           <line x1="12" y1="18" x2="12.01" y2="18"></line>
@@ -101,7 +101,7 @@
     </div>
 
     <div class="action-footer">
-      <button class="btn-secondary" (click)="cancelarCobro()">Cancelar</button>
+      <button class="btn-secondary">Cancelar</button>
       <button class="btn-primary btn-large">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
           <polyline points="20 6 9 17 4 12"></polyline>

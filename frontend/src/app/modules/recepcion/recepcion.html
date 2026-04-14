@@ -6,18 +6,34 @@
 
     <div class="ticket-actual-card">
       <span>Atendiendo ahora:</span>
-      <h1>{{ ticketActual }}</h1>
+      <h1>A-042</h1>
       <button class="btn-primary">Finalizar Atención</button>
     </div>
 
     <div class="ticket-queue">
       <h3>Siguientes en cola:</h3>
-      <div class="queue-item" *ngFor="let ticket of ticketsEnEspera">
+      
+      <div class="queue-item">
         <div class="ticket-info">
-          <strong>{{ ticket.numero }}</strong>
+          <strong>A-043</strong>
         </div>
         <button class="btn-outline-small">Llamar</button>
       </div>
+
+      <div class="queue-item">
+        <div class="ticket-info">
+          <strong>A-044</strong>
+        </div>
+        <button class="btn-outline-small">Llamar</button>
+      </div>
+
+      <div class="queue-item">
+        <div class="ticket-info">
+          <strong>A-045</strong>
+        </div>
+        <button class="btn-outline-small">Llamar</button>
+      </div>
+
     </div>
   </aside>
 
