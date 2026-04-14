@@ -1,17 +1,17 @@
 .topbar {
   height: 70px;
-  background-color: #12a8a1;
+  background-color: var(--brand-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   z-index: 10;
 }
 
 .brand {
   font-size: 1.25rem;
-  color: #ffffff;
+  color: var(--bg-card);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -24,8 +24,8 @@
 }
 
 .avatar {
-  background: #319795;
-  color: #ffffff;
+  background-color: var(--bg-card);
+  color: var(--brand-primary);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -43,39 +43,29 @@
 
 .user-info strong { 
   font-size: 0.875rem; 
-  color: #ffffff; 
+  color: var(--bg-card); 
 }
 
 .user-info span { 
   font-size: 0.75rem; 
-  color: #ffffff; 
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 2rem; /* Espacio entre el perfil y el botón de salir */
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  color: var(--bg-card);
+  opacity: 0.9;
 }
 
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #fff5f5;
+  background: var(--bg-muted);
   padding: 0.5rem 1rem;
-  border-radius: 8px;
-  color: #718096;
+  border-radius: var(--radius-md);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
+  border: none;
 }
 
 .logout-btn:hover {
