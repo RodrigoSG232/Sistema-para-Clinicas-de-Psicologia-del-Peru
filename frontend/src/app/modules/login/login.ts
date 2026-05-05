@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -14,28 +15,32 @@ export class LoginComponent {
   username = '';
   password = '';
   errorMessage = '';
+  loading = false;
 
-  private usuariosSimulados = [
-    { user: 'recepcion', pass: '123', ruta: '/recepcion' },
-    { user: 'caja', pass: '123', ruta: '/caja' },
-    { user: 'psicologo', pass: '123', ruta: '/psicologia' },
-  ];
-
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   onLogin() {
-    const usuarioEncontrado = this.usuariosSimulados.find(
-      u => u.user === this.username && u.pass === this.password
-    );
-
-    if (usuarioEncontrado) {
-      this.errorMessage = '';
-      
-      localStorage.setItem('usuarioActual', this.username);
-      
-      this.router.navigate([usuarioEncontrado.ruta]);
-    } else {
-      this.errorMessage = 'Usuario o contraseña incorrectos.';
+    if (!this.username || !this.password) {
+      this.errorMessage = 'Complete usuario y contraseña.';
+      return;
     }
+    this.loading = true;
+    this.errorMessage = '';
+
+    this.authService.login({ username: this.username, password: this.password }).subscribe({
+      next: (res) => {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('usuarioActual', res.nombreCompleto || res.username);
+        localStorage.setItem('rol', res.rol);
+        this.loading = false;
+        this.router.navigate([res.ruta]);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.status === 401
+          ? 'Usuario o contraseña incorrectos.'
+          : 'Error de conexión con el servidor.';
+      }
+    });
   }
 }

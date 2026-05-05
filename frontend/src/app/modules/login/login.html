@@ -15,7 +15,7 @@
         <label>Usuario</label>
         <div class="input-with-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <input type="text" [(ngModel)]="username" name="username" placeholder="Ingrese su usuario" required>
+          <input type="text" [(ngModel)]="username" name="username" placeholder="Ingrese su usuario" required [disabled]="loading">
         </div>
       </div>
 
@@ -23,7 +23,7 @@
         <label>Contraseña</label>
         <div class="input-with-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          <input type="password" [(ngModel)]="password" name="password" placeholder="••••••••" required>
+          <input type="password" [(ngModel)]="password" name="password" placeholder="••••••••" required [disabled]="loading">
         </div>
       </div>
 
@@ -32,13 +32,11 @@
         {{ errorMessage }}
       </div>
 
-      <button type="submit" class="btn-primary btn-block">Iniciar Sesión</button>
+      <button type="submit" class="btn-primary btn-block" [disabled]="loading">
+        <span *ngIf="!loading">Iniciar Sesión</span>
+        <span *ngIf="loading">Autenticando...</span>
+      </button>
       
     </form>
-    
-    <div class="login-footer">
-      <a href="#">¿Olvidó su contraseña?</a>
-    </div>
-
   </div>
 </div>
