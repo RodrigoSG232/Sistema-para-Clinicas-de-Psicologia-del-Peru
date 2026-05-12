@@ -67,7 +67,8 @@ public class AuthController {
             case "RECEPCION" -> "/recepcion";
             case "CAJA"      -> "/caja";
             case "PSICOLOGO" -> "/psicologia";
-            default          -> "/";
+            case "ADMIN" -> "/admin";
+            default          -> "/login";
         };
     }
 
