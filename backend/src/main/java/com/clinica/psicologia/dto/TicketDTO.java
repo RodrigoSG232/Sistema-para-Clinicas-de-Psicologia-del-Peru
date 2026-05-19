@@ -11,6 +11,4 @@ public class TicketDTO {
     private String numero;
     private String fechaEmision;
     private String estado;
-
-    private String pacienteNombre;
 }

@@ -47,10 +47,7 @@ public class RecepcionController {
                         t.getId(),
                         t.getNumero(),
                         t.getFechaEmision().format(formatter),
-                        t.getEstado(),
-                        t.getPaciente() != null
-                                ? t.getPaciente().getNombres() + " " + t.getPaciente().getApellidos()
-                                : null
+                        t.getEstado()
                 ))
                 .toList();
 
@@ -59,22 +56,39 @@ public class RecepcionController {
 
     @PostMapping("/tickets/emitir")
     public ResponseEntity<TicketDTO> emitirTicket() {
+        
+        try {
+            LocalDateTime hoy = LocalDate.now().atStartOfDay();
+            
+            // 🟢 SOLUCIÓN: Recibimos un Integer (que permite nulos)
+            Integer maxCorrelativo = ticketRepo.getMaxCorrelativoDia(hoy);
+            
+            // Si es null (no hay tickets hoy), empezamos en 0. Si no, tomamos el valor.
+            int correlativo = (maxCorrelativo == null ? 0 : maxCorrelativo) + 1;
+            
+            String numero = "A-" + String.format("%03d", correlativo);
 
-        LocalDateTime hoy = LocalDate.now().atStartOfDay();
-        int correlativo = ticketRepo.getMaxCorrelativoDia(hoy) + 1;
-        String numero = "A-" + String.format("%03d", correlativo);
+            Ticket nuevoTicket = new Ticket();
+            nuevoTicket.setNumero(numero);
+            nuevoTicket.setFechaEmision(LocalDateTime.now());
+            nuevoTicket.setEstado("ESPERA"); 
 
-        Ticket t = ticketRepo.save(Ticket.builder().numero(numero).build());
+            Ticket t = ticketRepo.save(nuevoTicket);
 
-        TicketDTO dto = new TicketDTO(
-                t.getId(),
-                t.getNumero(),
-                t.getFechaEmision().toString(),
-                t.getEstado(),
-                null
-        );
+            TicketDTO dto = new TicketDTO(
+                    t.getId(),
+                    t.getNumero(),
+                    t.getFechaEmision().toString(),
+                    t.getEstado()
+            );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+            
+        } catch (Exception e) {
+            // Si algo más falla, esto lo imprimirá en rojo en tu consola de Java
+            e.printStackTrace(); 
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PatchMapping("/tickets/{id}/estado")
@@ -91,10 +105,7 @@ public class RecepcionController {
                     actualizado.getId(),
                     actualizado.getNumero(),
                     actualizado.getFechaEmision().toString(),
-                    actualizado.getEstado(),
-                    actualizado.getPaciente() != null
-                            ? actualizado.getPaciente().getNombres() + " " + actualizado.getPaciente().getApellidos()
-                            : null
+                    actualizado.getEstado()
             );
 
             return ResponseEntity.ok(dto);
@@ -245,7 +256,7 @@ public class RecepcionController {
                 ticketRepo.findById(ticketId).ifPresent(t -> {
                     cita.setTicket(t);
                     t.setEstado("EN_ATENCION");
-                    t.setPaciente(paciente);
+                    // CORREGIDO: Se eliminó t.setPaciente(paciente);
                     ticketRepo.save(t);
                 });
             }

@@ -38,7 +38,7 @@ public class Paciente {
     @Column(length = 250)
     private String direccion;
 
-    @Column(name = "fecha_apertura", nullable = false)
+    @Column(name = "creado_en", nullable = false)
     @Builder.Default
     private LocalDateTime fechaApertura = LocalDateTime.now();
 
