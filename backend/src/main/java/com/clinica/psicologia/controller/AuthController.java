@@ -84,4 +84,9 @@ public class AuthController {
             )))
             .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
+    @GetMapping("/hash")
+    public String hash(@RequestParam String pass) {
+    return passwordEncoder.encode(pass);
+    }
 }
+

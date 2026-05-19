@@ -47,6 +47,9 @@ public class PsicologiaController {
     public ResponseEntity<Cita> cambiarEstadoCita(
             @PathVariable Integer id,
             @RequestBody Map<String, String> body) {
+        if (id == null) {
+            return ResponseEntity.badRequest().build();
+        }
         return citaRepo.findById(id).map(c -> {
             c.setEstado(body.get("estado"));
             return ResponseEntity.ok(citaRepo.save(c));
@@ -71,6 +74,10 @@ public class PsicologiaController {
         if (procesoRepo.findByPacienteIdAndActivoTrue(pacienteId).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", "El paciente ya tiene un proceso terapéutico activo"));
+        }
+
+        if (pacienteId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "ID de paciente inválido"));
         }
 
         String token = authHeader.replace("Bearer ", "");
