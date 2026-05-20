@@ -9,7 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;    
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -49,12 +49,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsSource()))
             .csrf(csrf -> csrf.disable())
 
-            // 🔥 AGREGA ESTO
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(form -> form.disable())
 
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/recepcion/**").hasAnyRole("RECEPCION", "ADMIN")
                 .requestMatchers("/api/caja/**").hasAnyRole("CAJA", "ADMIN")

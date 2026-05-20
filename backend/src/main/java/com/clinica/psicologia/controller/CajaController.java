@@ -117,7 +117,7 @@ public class CajaController {
             comprobanteRepo.save(comp);
 
             // Marcar deuda como pagada
-            deuda.setEstado("PAGADO");
+            deuda.setEstado("PAGADA");
             deudaRepo.save(deuda);
 
             // Marcar cita como PAGADA

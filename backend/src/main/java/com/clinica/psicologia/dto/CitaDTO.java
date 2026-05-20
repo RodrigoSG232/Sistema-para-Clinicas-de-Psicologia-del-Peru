@@ -12,4 +12,8 @@ public class CitaDTO {
     private String estado;
     private String psicologo;
     private String especialidad;
+    private String paciente;
+    private Integer pacienteId;
+    private String pacienteDni;
+    private String pacienteHc;
 }

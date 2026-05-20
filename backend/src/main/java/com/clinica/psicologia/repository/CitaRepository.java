@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 public interface CitaRepository extends JpaRepository<Cita, Integer> {
@@ -17,8 +16,8 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
     SELECT COUNT(c) > 0
     FROM Cita c
     WHERE c.psicologo.id = :psicologoId
-      AND c.fechaCita = :fecha
-      AND FUNCTION('FORMAT', c.horaCita, 'HH:mm') = :hora
+    AND c.fechaCita = :fecha
+    AND FUNCTION('FORMAT', c.horaCita, 'HH:mm') = :hora
 """)
 boolean existeCita(Integer psicologoId, LocalDate fecha, String hora);
     

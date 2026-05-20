@@ -3,6 +3,6 @@ import com.clinica.psicologia.entity.ComprobantePago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 public interface ComprobantePagoRepository extends JpaRepository<ComprobantePago, Integer> {
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(c.numeroComprobante,3,LEN(c.numeroComprobante)) AS int)),0) FROM ComprobantePago c")
-    Integer getMaxCorrelativo();
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(cp.numero_comprobante, 3, LEN(cp.numero_comprobante)) AS INT)), 0) FROM [ComprobantePago] cp", nativeQuery = true)
+Integer getMaxCorrelativo();
 }

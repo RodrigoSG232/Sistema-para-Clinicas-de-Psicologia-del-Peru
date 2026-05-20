@@ -1,5 +1,6 @@
 package com.clinica.psicologia.controller;
 
+import com.clinica.psicologia.dto.CitaDTO;
 import com.clinica.psicologia.entity.*;
 import com.clinica.psicologia.repository.*;
 import com.clinica.psicologia.security.JwtUtil;
@@ -38,10 +39,30 @@ public class PsicologiaController {
         return psicologoRepo.findByUsuarioId(usuario.getId()).map(psic -> {
             LocalDate fechaDate = fecha != null ? LocalDate.parse(fecha) : LocalDate.now();
             List<Cita> citas = citaRepo.findByPsicologoFecha(psic.getId(), fechaDate);
-            return ResponseEntity.ok(Map.of("psicologo", psic, "citas", citas, "fecha", fechaDate));
-        }).orElse(ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", "No es un psicólogo registrado")));
-    }
+
+            // ✅ Mapear a DTO en vez de retornar la entidad directamente
+            List<CitaDTO> citasDTO = citas.stream().map(c -> new CitaDTO(
+                c.getId(),
+                c.getFechaCita().toString(),
+                c.getHoraCita().toString(),
+                c.getEstado(),
+                psic.getNombres() + " " + psic.getApellidos(),
+                c.getEspecialidad().getNombre(),
+                c.getPaciente().getNombres() + " " + c.getPaciente().getApellidos(),
+                c.getPaciente().getId(),           // ← pacienteId
+                c.getPaciente().getDni(),          // ← pacienteDni
+                c.getPaciente().getNumeroHistoria() // ← pacienteHc (verifica el nombre del campo)
+            )).toList();
+
+            return ResponseEntity.ok(Map.of(
+                "psicologoId", psic.getId(),
+                "nombreCompleto", psic.getNombres() + " " + psic.getApellidos(),
+                "citas", citasDTO,
+                "fecha", fechaDate
+            ));
+    }).orElse(ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", "No es un psicólogo registrado")));
+}
 
     @PatchMapping("/citas/{id}/estado")
     public ResponseEntity<Cita> cambiarEstadoCita(
