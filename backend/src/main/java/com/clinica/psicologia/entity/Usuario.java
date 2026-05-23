@@ -30,4 +30,7 @@ public class Usuario {
     @Column(name = "creado_en", nullable = false)
     @Builder.Default
     private LocalDateTime creadoEn = LocalDateTime.now();
+
+    @Column(name = "email", nullable = false, unique = true, length = 150)
+    private String email;
 }
