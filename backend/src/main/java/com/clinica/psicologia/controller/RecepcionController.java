@@ -12,6 +12,7 @@ import com.clinica.psicologia.dto.CitaRequestDTO;
 import com.clinica.psicologia.dto.CitaResponseDTO;
 import com.clinica.psicologia.dto.PsicologoDTO;
 import com.clinica.psicologia.dto.TicketDTO;
+import com.clinica.psicologia.service.TicketService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,13 +20,13 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/recepcion")
 @RequiredArgsConstructor
 public class RecepcionController {
 
+        private final TicketService ticketService;
         private final TicketRepository ticketRepo;
         private final PacienteRepository pacienteRepo;
         private final EspecialidadRepository especialidadRepo;
@@ -40,72 +41,59 @@ public class RecepcionController {
         public ResponseEntity<List<TicketDTO>> listarTickets(
                         @RequestParam(defaultValue = "ESPERA") String estado) {
 
-                List<Ticket> tickets = ticketRepo.findByEstadoOrderByCreadoEnAsc(estado);
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-                List<TicketDTO> response = tickets.stream()
-                                .map(t -> new TicketDTO(
-                                                t.getId(),
-                                                t.getNumero(),
-                                                t.getCreadoEn().format(formatter),
-                                                t.getEstado()))
-                                .toList();
-
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(ticketService.listarPorEstado(estado));
         }
 
         @PostMapping("/tickets/emitir")
         public ResponseEntity<TicketDTO> emitirTicket() {
+                return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.emitirTicket());
+        }
+
+        @GetMapping("/tickets/actual")
+        public ResponseEntity<TicketDTO> obtenerTicketActual() {
+                TicketDTO ticket = ticketService.obtenerTicketActual();
+                return ticket != null ? ResponseEntity.ok(ticket) : ResponseEntity.noContent().build();
+        }
+
+        @PatchMapping("/tickets/{id}/llamar")
+        public ResponseEntity<?> llamarTicket(@PathVariable Integer id) {
                 try {
-                        LocalDate fechaOperativa = LocalDate.now(ZoneId.of("America/Lima"));
-                        LocalDateTime creadoEn = LocalDateTime.now(ZoneId.of("America/Lima"));
+                        return ResponseEntity.ok(ticketService.llamarTicket(id));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+                } catch (IllegalStateException e) {
+                        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+                }
+        }
 
-                        Integer maxCorrelativo = ticketRepo.getMaxCorrelativoPorFecha(fechaOperativa);
-                        int correlativo = (maxCorrelativo == null ? 0 : maxCorrelativo) + 1;
-
-                        String numero = "A-" + String.format("%03d", correlativo);
-
-                        Ticket nuevoTicket = new Ticket();
-                        nuevoTicket.setNumero(numero);
-                        nuevoTicket.setFecha(fechaOperativa);
-                        nuevoTicket.setCreadoEn(creadoEn);
-                        nuevoTicket.setEstado("ESPERA");
-
-                        Ticket t = ticketRepo.save(nuevoTicket);
-
-                        TicketDTO dto = new TicketDTO(
-                                        t.getId(),
-                                        t.getNumero(),
-                                        t.getCreadoEn().toString(),
-                                        t.getEstado());
-
-                        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-
-                } catch (Exception e) {
-                        e.printStackTrace();
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        @PatchMapping("/tickets/{id}/finalizar")
+        public ResponseEntity<?> finalizarTicket(@PathVariable Integer id) {
+                try {
+                        return ResponseEntity.ok(ticketService.finalizarTicket(id));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+                } catch (IllegalStateException e) {
+                        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
                 }
         }
 
         @PatchMapping("/tickets/{id}/estado")
-        public ResponseEntity<TicketDTO> cambiarEstadoTicket(
+        public ResponseEntity<?> cambiarEstadoTicket(
                         @PathVariable Integer id,
                         @RequestBody Map<String, String> body) {
 
-                return ticketRepo.findById(id).map(t -> {
+                String estado = body.get("estado");
 
-                        t.setEstado(body.get("estado"));
-                        Ticket actualizado = ticketRepo.save(t);
+                if ("EN_ATENCION".equals(estado)) {
+                        return llamarTicket(id);
+                }
 
-                        TicketDTO dto = new TicketDTO(
-                                        actualizado.getId(),
-                                        actualizado.getNumero(),
-                                        actualizado.getCreadoEn().toString(),
-                                        actualizado.getEstado());
+                if ("FINALIZADO".equals(estado)) {
+                        return finalizarTicket(id);
+                }
 
-                        return ResponseEntity.ok(dto);
-
-                }).orElse(ResponseEntity.notFound().build());
+                return ResponseEntity.badRequest()
+                                .body(Map.of("error", "Estado no soportado para este endpoint"));
         }
 
         // ─── PACIENTES / HISTORIA CLÍNICA ─────────────────────────────────────────
