@@ -7,11 +7,12 @@ import java.util.List;
 
 public interface DeudaRepository extends JpaRepository<Deuda, Integer> {
 
-    @Query("SELECT d FROM Deuda d WHERE d.paciente.id = :pacienteId AND d.estado = 'PENDIENTE' AND (:concepto IS NULL OR d.concepto LIKE CONCAT('%',:concepto,'%'))")
+    @Query("SELECT d FROM Deuda d LEFT JOIN FETCH d.paciente LEFT JOIN FETCH d.cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.ticket WHERE d.paciente.id = :pacienteId AND d.estado = 'PENDIENTE' AND (:concepto IS NULL OR d.concepto LIKE CONCAT('%',:concepto,'%'))")
     List<Deuda> buscarPendientes(@Param("pacienteId") Integer pacienteId, @Param("concepto") String concepto);
 
-    @Query("SELECT d FROM Deuda d WHERE d.estado = 'PENDIENTE' AND (LOWER(d.paciente.nombres) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(d.paciente.apellidos) LIKE LOWER(CONCAT('%',:q,'%')) OR d.paciente.dni LIKE CONCAT('%',:q,'%'))")
+    @Query("SELECT d FROM Deuda d LEFT JOIN FETCH d.paciente LEFT JOIN FETCH d.cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.ticket WHERE d.estado = 'PENDIENTE' AND (LOWER(d.paciente.nombres) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(d.paciente.apellidos) LIKE LOWER(CONCAT('%',:q,'%')) OR d.paciente.dni LIKE CONCAT('%',:q,'%'))")
     List<Deuda> buscarPorPaciente(@Param("q") String q);
 
-    List<Deuda> findByEstado(String estado);
+    @Query("SELECT d FROM Deuda d LEFT JOIN FETCH d.paciente LEFT JOIN FETCH d.cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.ticket WHERE d.estado = :estado")
+    List<Deuda> findByEstado(@Param("estado") String estado);
 }

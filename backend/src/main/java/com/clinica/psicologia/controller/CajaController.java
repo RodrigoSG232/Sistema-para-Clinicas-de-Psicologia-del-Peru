@@ -47,13 +47,13 @@ public class CajaController {
 
         List<DeudaDTO> response = resultado.stream()
         .map(d -> new DeudaDTO(
-                d.getId(),
-                d.getPaciente().getNombres() + " " + d.getPaciente().getApellidos(),
-                d.getPaciente().getDni(),
-                d.getConcepto(),
-                d.getCita() != null ? d.getCita().getEspecialidad().getNombre() : null,
-                d.getMonto().doubleValue(),
-                d.getEstado()
+            d.getId(),
+            d.getPaciente().getNombres() + " " + d.getPaciente().getApellidos(),
+            d.getPaciente().getDni(),
+            d.getConcepto(),
+            d.getCita() != null ? d.getCita().getEspecialidad().getNombre() : null,
+            d.getMonto().doubleValue(),
+            d.getEstado()
         ))
         .toList();
 
@@ -69,13 +69,13 @@ public class CajaController {
 
         List<DeudaDTO> response = resultado.stream()
         .map(d -> new DeudaDTO(
-                d.getId(),
-                d.getPaciente().getNombres() + " " + d.getPaciente().getApellidos(),
-                d.getPaciente().getDni(),
-                d.getConcepto(),
-                d.getCita() != null ? d.getCita().getEspecialidad().getNombre() : null,
-                d.getMonto().doubleValue(),
-                d.getEstado()
+            d.getId(),
+            d.getPaciente().getNombres() + " " + d.getPaciente().getApellidos(),
+            d.getPaciente().getDni(),
+            d.getConcepto(),
+            d.getCita() != null ? d.getCita().getEspecialidad().getNombre() : null,
+            d.getMonto().doubleValue(),
+            d.getEstado()
         ))
         .toList();
 
