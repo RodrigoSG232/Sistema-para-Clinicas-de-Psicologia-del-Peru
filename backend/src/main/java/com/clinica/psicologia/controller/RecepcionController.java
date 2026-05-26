@@ -48,11 +48,6 @@ public class RecepcionController {
                 return ResponseEntity.ok(ticketService.listarPorEstado(estado));
         }
 
-        @PostMapping("/tickets/emitir")
-        public ResponseEntity<TicketDTO> emitirTicket() {
-                return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.emitirTicket());
-        }
-
         @GetMapping("/tickets/actual")
         public ResponseEntity<TicketDTO> obtenerTicketActual() {
                 TicketDTO ticket = ticketService.obtenerTicketActual();

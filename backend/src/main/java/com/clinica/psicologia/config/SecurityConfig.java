@@ -56,11 +56,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/anfitriona/**").hasAnyRole("ANFITRIONA", "ADMIN")
                 .requestMatchers("/api/recepcion/**").hasAnyRole("RECEPCION", "ADMIN")
                 .requestMatchers("/api/caja/**").hasAnyRole("CAJA", "ADMIN")
                 .requestMatchers("/api/psicologia/**").hasAnyRole("PSICOLOGO", "ADMIN")
-                .requestMatchers("/api/anfitriona/**").hasAnyRole("ANFITRIONA", "ADMIN")
-                .requestMatchers("/api/recepcion/**").hasAnyRole("RECEPCION", "ADMIN", "ANFITRIONA")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
