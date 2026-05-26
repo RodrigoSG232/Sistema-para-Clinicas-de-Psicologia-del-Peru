@@ -10,12 +10,15 @@ import org.springframework.web.bind.annotation.*;
 import com.clinica.psicologia.dto.CitaDTO;
 import com.clinica.psicologia.dto.CitaRequestDTO;
 import com.clinica.psicologia.dto.CitaResponseDTO;
+import com.clinica.psicologia.dto.PacienteRequestDTO;
+import com.clinica.psicologia.dto.PacienteResponseDTO;
 import com.clinica.psicologia.dto.PsicologoDTO;
 import com.clinica.psicologia.dto.TicketDTO;
+import com.clinica.psicologia.service.PacienteService;
 import com.clinica.psicologia.service.TicketService;
+import jakarta.validation.Valid;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.Map;
 public class RecepcionController {
 
         private final TicketService ticketService;
+        private final PacienteService pacienteService;
         private final TicketRepository ticketRepo;
         private final PacienteRepository pacienteRepo;
         private final EspecialidadRepository especialidadRepo;
@@ -118,15 +122,8 @@ public class RecepcionController {
         }
 
         @PostMapping("/pacientes")
-        public ResponseEntity<?> crearPaciente(@RequestBody Paciente p) {
-                if (pacienteRepo.existsByDni(p.getDni())) {
-                        return ResponseEntity.status(HttpStatus.CONFLICT)
-                                        .body(Map.of("error", "Ya existe un paciente con ese DNI"));
-                }
-                int maxNum = pacienteRepo.getMaxNumeroHistoria();
-                p.setNumeroHistoria("HC-" + String.format("%04d", maxNum + 1));
-                p.setFechaApertura(LocalDateTime.now());
-                return ResponseEntity.status(HttpStatus.CREATED).body(pacienteRepo.save(p));
+        public ResponseEntity<PacienteResponseDTO> crearPaciente(@Valid @RequestBody PacienteRequestDTO request) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(pacienteService.crearPaciente(request));
         }
 
         // ─── ESPECIALIDADES Y PSICÓLOGOS ──────────────────────────────────────────
