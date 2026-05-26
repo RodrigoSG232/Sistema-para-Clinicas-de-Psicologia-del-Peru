@@ -153,12 +153,13 @@ public class AuthController {
     }
 
     private String rutaPorRol(String rol) {
-        return switch (rol) {
-            case "RECEPCION" -> "/recepcion";
-            case "CAJA"      -> "/caja";
-            case "PSICOLOGO" -> "/psicologia";
-            case "ADMIN"     -> "/admin";
-            default          -> "/login";
-        };
-    }
+    return switch (rol) {
+        case "RECEPCION"  -> "/recepcion";
+        case "CAJA"       -> "/caja";
+        case "PSICOLOGO"  -> "/psicologia";
+        case "ADMIN"      -> "/admin";
+        case "ANFITRIONA" -> "/anfitriona";  
+        default           -> "/login";
+    };
+}
 }
