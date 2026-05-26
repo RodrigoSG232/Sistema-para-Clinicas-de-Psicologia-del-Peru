@@ -25,7 +25,18 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketDTO> listarPorEstado(String estado) {
-        return ticketRepository.findByEstadoOrderByCreadoEnAsc(estado).stream()
+        LocalDate fechaOperativa = LocalDate.now(ZONA_LIMA);
+
+        return ticketRepository.findByFechaAndEstadoOrderByCreadoEnAsc(fechaOperativa, estado).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TicketDTO> listarDelDia() {
+        LocalDate fechaOperativa = LocalDate.now(ZONA_LIMA);
+
+        return ticketRepository.findByFechaOrderByCreadoEnAsc(fechaOperativa).stream()
                 .map(this::toDto)
                 .toList();
     }
@@ -50,13 +61,14 @@ public class TicketService {
 
     @Transactional
     public TicketDTO llamarTicket(Integer id) {
+        LocalDate fechaOperativa = LocalDate.now(ZONA_LIMA);
         Ticket ticket = obtenerTicket(id);
 
         if (!ESTADO_ESPERA.equals(ticket.getEstado())) {
             throw new IllegalStateException("Solo se puede llamar un ticket en espera");
         }
 
-        if (ticketRepository.existsByEstado(ESTADO_EN_ATENCION)) {
+        if (ticketRepository.existsByFechaAndEstado(fechaOperativa, ESTADO_EN_ATENCION)) {
             throw new IllegalStateException("Ya existe un ticket en atencion");
         }
 
@@ -78,7 +90,9 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public TicketDTO obtenerTicketActual() {
-        return ticketRepository.findFirstByEstadoOrderByCreadoEnAsc(ESTADO_EN_ATENCION)
+        LocalDate fechaOperativa = LocalDate.now(ZONA_LIMA);
+
+        return ticketRepository.findFirstByFechaAndEstadoOrderByCreadoEnAsc(fechaOperativa, ESTADO_EN_ATENCION)
                 .map(this::toDto)
                 .orElse(null);
     }

@@ -16,6 +16,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Integer> {
 
     boolean existsByEstado(String estado);
 
+    List<Ticket> findByFechaOrderByCreadoEnAsc(LocalDate fecha);
+
+    List<Ticket> findByFechaAndEstadoOrderByCreadoEnAsc(LocalDate fecha, String estado);
+
+    Optional<Ticket> findFirstByFechaAndEstadoOrderByCreadoEnAsc(LocalDate fecha, String estado);
+
+    boolean existsByFechaAndEstado(LocalDate fecha, String estado);
+
     @Query(value = """
             SELECT COALESCE(MAX(CAST(SUBSTRING(numero, 3, LEN(numero)) AS INT)), 0)
             FROM Ticket
