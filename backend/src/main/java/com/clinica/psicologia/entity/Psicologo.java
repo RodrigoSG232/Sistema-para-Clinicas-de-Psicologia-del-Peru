@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
 
-@Entity @Table(name = "Psicologo")
+@Entity @Table(name = "psicologo")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Psicologo {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

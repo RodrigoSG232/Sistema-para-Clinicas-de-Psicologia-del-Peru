@@ -5,7 +5,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity @Table(name = "ComprobantePago")
+@Entity @Table(name = "comprobantepago")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ComprobantePago {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

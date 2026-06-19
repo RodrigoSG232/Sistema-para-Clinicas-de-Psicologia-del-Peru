@@ -13,6 +13,6 @@ public interface PacienteRepository extends JpaRepository<Paciente, Integer> {
     @Query("SELECT p FROM Paciente p WHERE LOWER(p.nombres) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(p.apellidos) LIKE LOWER(CONCAT('%',:q,'%')) OR p.dni LIKE CONCAT('%',:q,'%')")
     List<Paciente> buscar(@Param("q") String q);
 
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(p.numeroHistoria, 4, LEN(p.numeroHistoria)) AS int)), 0) FROM Paciente p")
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(numero_historia, 4) AS INTEGER)), 0) FROM paciente", nativeQuery = true)
     Integer getMaxNumeroHistoria();
 }

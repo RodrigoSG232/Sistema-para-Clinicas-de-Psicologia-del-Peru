@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Entity @Table(name = "Paciente")
+@Entity @Table(name = "paciente")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Paciente {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

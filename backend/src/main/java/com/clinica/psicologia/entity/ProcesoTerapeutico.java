@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 
-@Entity @Table(name = "ProcesoTerapeutico")
+@Entity @Table(name = "procesoterapeutico")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ProcesoTerapeutico {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +30,7 @@ public class ProcesoTerapeutico {
     @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column(columnDefinition = "TEXT")
     private String observaciones;
 
     @Column(nullable = false)

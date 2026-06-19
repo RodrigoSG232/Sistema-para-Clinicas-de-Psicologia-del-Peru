@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-@Entity @Table(name = "Sesion")
+@Entity @Table(name = "sesion")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Sesion {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,10 +21,11 @@ public class Sesion {
     @Column(name = "fase_sesion", nullable = false)
     private Integer faseSesion;
 
-    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String evolucion;
 
-    @Column(name = "indicaciones_paciente", columnDefinition = "NVARCHAR(MAX)")
+
+    @Column(name = "indicaciones_paciente", columnDefinition = "TEXT")
     private String indicacionesPaciente;
 
     @Column(name = "fecha_registro", nullable = false)

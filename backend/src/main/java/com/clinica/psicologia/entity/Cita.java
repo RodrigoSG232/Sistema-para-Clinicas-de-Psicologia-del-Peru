@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Entity @Table(name = "Cita")
+@Entity @Table(name = "cita")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Cita {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

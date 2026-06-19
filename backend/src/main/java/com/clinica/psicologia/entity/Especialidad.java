@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 
-@Entity @Table(name = "Especialidad")
+@Entity @Table(name = "especialidad")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Especialidad {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

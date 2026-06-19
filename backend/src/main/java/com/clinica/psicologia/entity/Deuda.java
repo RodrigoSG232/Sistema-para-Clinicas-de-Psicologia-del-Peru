@@ -5,7 +5,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity @Table(name = "Deuda")
+@Entity @Table(name = "deuda")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Deuda {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
