@@ -146,6 +146,7 @@ public class AuthController {
         case "PSICOLOGO"  -> "/psicologia";
         case "ADMIN"      -> "/admin";
         case "ANFITRIONA" -> "/anfitriona";  
+        case "ENFERMERA"  -> "/enfermera";
         default           -> "/login";
     };
 }

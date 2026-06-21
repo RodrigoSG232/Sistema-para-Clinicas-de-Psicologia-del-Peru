@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS cita (
     fecha_cita      DATE NOT NULL,
     hora_cita       TIME NOT NULL,
     estado          VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE_PAGO'
-                    CHECK (estado IN ('PENDIENTE_PAGO', 'PAGADA', 'EN_CONSULTA', 'ATENDIDA', 'CANCELADA')),
+                    CHECK (estado IN ('PENDIENTE_PAGO', 'PAGADA', 'EN_PISO', 'EN_CONSULTA', 'ATENDIDA', 'CANCELADA')),
     creado_por      INTEGER REFERENCES usuario(id),
     creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_cita_psicologo_fecha_hora UNIQUE (psicologo_id, fecha_cita, hora_cita)
@@ -155,7 +155,8 @@ INSERT INTO rol (nombre, descripcion) VALUES
     ('RECEPCION', 'Personal de recepcion'),
     ('CAJA', 'Cajero de consultorios'),
     ('PSICOLOGO', 'Psicologo tratante'),
-    ('ANFITRIONA', 'Personal de bienvenida y tickets')
+    ('ANFITRIONA', 'Personal de bienvenida y tickets'),
+    ('ENFERMERA', 'Enfermera de piso')
 ON CONFLICT (nombre) DO NOTHING;
 
 INSERT INTO especialidad (nombre, descripcion, tarifa) VALUES
@@ -194,6 +195,11 @@ BEGIN
     INSERT INTO usuario (username, password_hash, nombre_completo, rol_id, email)
     SELECT 'anfitriona', hash_pass, 'Ana Anfitriona Ramos', r.id, 'anfitriona@clinica.local'
     FROM rol r WHERE r.nombre = 'ANFITRIONA'
+    ON CONFLICT (username) DO NOTHING;
+
+    INSERT INTO usuario (username, password_hash, nombre_completo, rol_id, email)
+    SELECT 'enfermera', hash_pass, 'Elena Enfermera Rojas', r.id, 'enfermera@clinica.local'
+    FROM rol r WHERE r.nombre = 'ENFERMERA'
     ON CONFLICT (username) DO NOTHING;
 END $$;
 

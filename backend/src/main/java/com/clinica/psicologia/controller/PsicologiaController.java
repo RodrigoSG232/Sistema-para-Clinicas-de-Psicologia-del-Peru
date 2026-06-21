@@ -65,15 +65,16 @@ public class PsicologiaController {
 }
 
     @PatchMapping("/citas/{id}/estado")
-    public ResponseEntity<Cita> cambiarEstadoCita(
+    public ResponseEntity<?> cambiarEstadoCita(
             @PathVariable Integer id,
             @RequestBody Map<String, String> body) {
         if (id == null) {
             return ResponseEntity.badRequest().build();
         }
         return citaRepo.findById(id).map(c -> {
-            c.setEstado(body.get("estado"));
-            return ResponseEntity.ok(citaRepo.save(c));
+            String nuevoEstado = body.get("estado");
+            c.setEstado(nuevoEstado);
+            return ResponseEntity.ok(toCitaDTO(citaRepo.save(c)));
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -179,5 +180,20 @@ public class PsicologiaController {
         return pacienteRepo.findById(pacienteId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private CitaDTO toCitaDTO(Cita cita) {
+        return new CitaDTO(
+                cita.getId(),
+                cita.getFechaCita().toString(),
+                cita.getHoraCita().toString(),
+                cita.getEstado(),
+                cita.getPsicologo().getNombres() + " " + cita.getPsicologo().getApellidos(),
+                cita.getEspecialidad().getNombre(),
+                cita.getPaciente().getNombres() + " " + cita.getPaciente().getApellidos(),
+                cita.getPaciente().getId(),
+                cita.getPaciente().getDni(),
+                cita.getPaciente().getNumeroHistoria()
+        );
     }
 }

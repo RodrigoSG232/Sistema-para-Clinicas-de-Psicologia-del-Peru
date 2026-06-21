@@ -29,4 +29,7 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
 
     @Query("SELECT c FROM Cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.psicologo LEFT JOIN FETCH c.paciente WHERE c.fechaCita BETWEEN :inicio AND :fin ORDER BY c.fechaCita ASC, c.horaCita ASC")
     List<Cita> findByRangoFechas(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
+
+    @Query("SELECT c FROM Cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.psicologo LEFT JOIN FETCH c.paciente WHERE c.fechaCita = :fecha AND c.estado IN :estados ORDER BY c.horaCita ASC")
+    List<Cita> findByFechaAndEstadoIn(@Param("fecha") LocalDate fecha, @Param("estados") List<String> estados);
 }

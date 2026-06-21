@@ -34,7 +34,7 @@ public class Cita {
     @Column(name = "hora_cita", nullable = false)
     private LocalTime horaCita;
 
-    // PENDIENTE_PAGO | PAGADA | EN_CONSULTA | ATENDIDA | CANCELADA
+    // PENDIENTE_PAGO | PAGADA | EN_PISO | EN_CONSULTA | ATENDIDA | CANCELADA
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String estado = "PENDIENTE_PAGO";

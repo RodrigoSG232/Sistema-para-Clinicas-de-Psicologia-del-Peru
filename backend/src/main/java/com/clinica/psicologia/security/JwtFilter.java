@@ -57,6 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
             || ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/recuperar"))
             || ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/recuperar/verificar"))
             || path.startsWith("/api/public/")
+            || path.startsWith("/ws")
             || path.contains("/swagger-ui")     
             || path.contains("/v3/api-docs");   
     }
