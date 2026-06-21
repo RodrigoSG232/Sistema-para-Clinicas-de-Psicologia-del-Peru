@@ -30,30 +30,24 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        if (req.getUsername() == null || req.getPassword() == null) {
+            return ResponseEntity.status(401).body("Credenciales inválidas");
+        }
 
         var userOpt = usuarioRepo.findByUsername(req.getUsername());
 
         if (userOpt.isEmpty()) {
-            System.out.println("❌ Usuario no encontrado");
-            return ResponseEntity.status(401).body("Usuario no encontrado");
+            return ResponseEntity.status(401).body("Credenciales inválidas");
         }
 
         var u = userOpt.get();
 
-        System.out.println("✅ Usuario encontrado: " + u.getUsername());
-        System.out.println("Activo: " + u.getActivo());
-
         if (!Boolean.TRUE.equals(u.getActivo())) {
-            System.out.println("❌ Usuario inactivo");
             return ResponseEntity.status(401).body("Usuario inactivo");
         }
 
-        System.out.println("Password RAW: " + req.getPassword());
-        System.out.println("Password HASH: " + u.getPasswordHash());
-
         if (!passwordEncoder.matches(req.getPassword(), u.getPasswordHash())) {
-            System.out.println("❌ Password incorrecto");
-            return ResponseEntity.status(401).body("Password incorrecto");
+            return ResponseEntity.status(401).body("Credenciales inválidas");
         }
 
         String token = jwtUtil.generateToken(u.getUsername(), u.getRol().getNombre());
@@ -143,13 +137,6 @@ public class AuthController {
             recuperacionService.eliminarCodigo(email);
             return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
         }).orElse(ResponseEntity.notFound().build());
-    }
-
-    // ─── UTILIDADES ───────────────────────────────────────────────────────────
-
-    @GetMapping("/hash")
-    public String hash(@RequestParam String pass) {
-        return passwordEncoder.encode(pass);
     }
 
     private String rutaPorRol(String rol) {

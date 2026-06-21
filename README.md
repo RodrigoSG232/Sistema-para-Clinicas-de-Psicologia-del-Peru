@@ -1,203 +1,176 @@
-# 🧠 Sistema de Clínicas Psicología del Perú
+# Sistema de Clinicas Psicologia del Peru
 
-Sistema de gestión clínica para la sucursal Cono Sur. Cubre los flujos de **Recepción**, **Caja** y **Psicología** con autenticación JWT y base de datos SQL Server.
+Sistema de gestion clinica para la sucursal Cono Sur. Cubre flujos de anfitriona, recepcion, caja y psicologia con autenticacion JWT, backend Spring Boot y base de datos PostgreSQL en Neon.
 
----
+## Estructura
 
-## 🗂 Estructura del proyecto
-
-```
-clinica-psicologia/
-├── database/
-│   └── init.sql              ← Script de BD SQL Server (tablas + datos demo)
-├── backend/                  ← API REST Spring Boot 3 / Java 17
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/main/java/com/clinica/psicologia/
-│       ├── controller/       ← AuthController, RecepcionController, CajaController, PsicologiaController
-│       ├── entity/           ← Entidades JPA
-│       ├── repository/       ← Spring Data JPA
-│       ├── security/         ← JwtUtil, JwtFilter
-│       └── config/           ← SecurityConfig (CORS, roles)
-├── frontend/                 ← Angular 18 (código original del equipo)
-│   ├── Dockerfile            ← Build Angular + Nginx
-│   ├── nginx.conf            ← SPA routing + proxy /api/ → backend
-│   └── src/app/
-│       ├── services/         ← AuthService, RecepcionService, CajaService, PsicologiaService
-│       └── interceptors/     ← authInterceptor (adjunta JWT automáticamente)
-└── docker-compose.yml        ← Orquesta los 3 servicios
+```text
+.
+├── backend/      # API REST Spring Boot 3 / Java 17
+├── frontend/     # Angular
+├── database/     # Script PostgreSQL para Neon
+└── Figma/        # Diseno original
 ```
 
----
+## Stack Actual
 
-## 🚀 Levantar el proyecto con Docker
+- Backend: Java 17, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL driver.
+- Frontend: Angular, Bootstrap, HttpClient con interceptor JWT.
+- Base de datos: PostgreSQL compatible con Neon.
+- API principal: Spring Boot bajo `/api`.
+- PostgREST: si se usa, debe apuntar al mismo esquema PostgreSQL definido en `database/init.sql`.
 
-### Pre-requisitos
+## Base de Datos PostgreSQL / Neon
 
-- **Docker** ≥ 24 y **Docker Compose** ≥ 2.20 instalados
-- Sin necesidad de instalar Java, Maven, Node, SQL Server
-
-### 1. Copiar el frontend original al directorio frontend/
+El esquema oficial esta en:
 
 ```bash
-# (ya está incluido en el zip del proyecto)
-# Sólo asegúrate de que la carpeta frontend/ tenga el código Angular
+database/init.sql
 ```
 
-### 2. Levantar todos los servicios
+El script usa nombres en minuscula, que coinciden con las entidades JPA:
+
+```text
+rol
+usuario
+especialidad
+psicologo
+horariopsicologo
+paciente
+ticket
+cita
+deuda
+comprobantepago
+procesoterapeutico
+sesion
+```
+
+Para cargarlo en Neon con `psql`:
 
 ```bash
-cd clinica-psicologia
-docker compose up --build
+psql "postgresql://USUARIO:PASSWORD@HOST/DB?sslmode=require" -f database/init.sql
 ```
 
-La primera vez tarda ~5-8 min (descarga imágenes, compila Maven y Angular).
+Si ya tienes variables en `.env`, deben existir estas claves:
 
-### 3. Acceder
-
-| Servicio   | URL                       |
-| ---------- | ------------------------- |
-| Frontend   | http://localhost:4200     |
-| Backend    | http://localhost:8080/api |
-| SQL Server | localhost:1433            |
-
-### 4. Apagar
-
-```bash
-docker compose down          # mantiene los datos
-docker compose down -v       # borra también el volumen de BD
+```env
+DB_HOST=
+DB_PORT=5432
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+JWT_SECRET=
+MAIL_USERNAME=
+MAIL_PASSWORD=
 ```
 
----
+## Desarrollo Local
 
-## 👤 Usuarios demo (contraseña: `123`)
-
-| Usuario     | Rol       | Módulo       |
-| ----------- | --------- | ------------ |
-| `recepcion` | RECEPCION | /recepcion   |
-| `caja`      | CAJA      | /caja        |
-| `psicologo` | PSICOLOGO | /psicologia  |
-| `admin`     | ADMIN     | acceso total |
-
----
-
-## 🗄 Base de datos SQL Server
-
-### Tablas principales
-
-```
-Rol                   → roles del sistema
-Usuario               → cuentas de acceso
-Especialidad          → especialidades psicológicas (tarifa incluida)
-Psicologo             → datos del profesional + FK a Usuario y Especialidad
-HorarioPsicologo      → disponibilidad Lun-Sab 08:00-19:00
-Paciente              → historia clínica (numero_historia: HC-XXXX)
-Ticket                → cola de atención (A-001, A-002 …)
-Cita                  → agendamiento + estado (PENDIENTE_PAGO→PAGADA→ATENDIDA)
-Deuda                 → generada automáticamente al crear cita
-ComprobantePago       → boleta/factura emitida en caja (B-00001 …)
-ProcesoTerapeutico    → proceso global del paciente (4 fases)
-Sesion                → registro clínico de cada consulta
-```
-
-### Conectar con SQL Server Management Studio (SSMS)
-
-```
-Servidor:  localhost,1433
-Auth:      SQL Server Authentication
-Usuario:   sa
-Password:  Admin123!
-BD:        ClinicaPsicologia
-```
-
----
-
-## 🔌 API REST — Endpoints principales
-
-### Auth
-
-```
-POST   /api/auth/login       body: { username, password }  → { token, rol, ruta, … }
-GET    /api/auth/me          header: Bearer <token>
-```
-
-### Recepción
-
-```
-GET    /api/recepcion/tickets                          → lista de tickets
-POST   /api/recepcion/tickets/emitir                  → genera nuevo ticket (A-XXX)
-PATCH  /api/recepcion/tickets/{id}/estado              body: { estado }
-GET    /api/recepcion/pacientes/buscar?q=<texto>       → buscar por DNI/nombre
-GET    /api/recepcion/pacientes/dni/{dni}              → buscar paciente por DNI
-POST   /api/recepcion/pacientes                        → aperturar historia clínica
-GET    /api/recepcion/especialidades                   → lista de especialidades
-GET    /api/recepcion/psicologos?especialidadId=N      → psicólogos por especialidad
-GET    /api/recepcion/psicologos/{id}/horario-disponible?fecha=YYYY-MM-DD
-POST   /api/recepcion/citas                            → registrar cita + genera deuda
-```
-
-### Caja
-
-```
-GET    /api/caja/deudas/buscar?paciente=<texto>&concepto=<texto>
-POST   /api/caja/pagar/{deudaId}    body: { medioPago: EFECTIVO|TARJETA|YAPE_PLIN }
-GET    /api/caja/comprobantes/{id}
-```
-
-### Psicología
-
-```
-GET    /api/psicologia/agenda?fecha=YYYY-MM-DD         → agenda del psicólogo logueado
-PATCH  /api/psicologia/citas/{id}/estado               body: { estado }
-GET    /api/psicologia/pacientes/{id}/proceso
-POST   /api/psicologia/pacientes/{id}/proceso          → iniciar proceso terapéutico
-PATCH  /api/psicologia/procesos/{id}/fase              body: { faseActual: 1-4 }
-POST   /api/psicologia/sesiones                        → guardar evolución + indicaciones
-GET    /api/psicologia/sesiones/proceso/{procesoId}
-```
-
----
-
-## 🔧 Desarrollo sin Docker
-
-### Backend (requiere JDK 17 y SQL Server local)
+Backend:
 
 ```bash
 cd backend
-# Ajusta application.properties o usa variables de entorno:
-export DB_HOST=localhost
-export DB_PASSWORD=Admin123!
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
-### Frontend (requiere Node 20)
+En Windows:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Frontend:
 
 ```bash
 cd frontend
 npm install
-ng serve --open
-# Apunta a http://localhost:8080/api por defecto (environment.ts)
+npm start
 ```
 
----
+Angular usa `/api` y el proxy de desarrollo envia esas llamadas a `http://localhost:8080`.
 
-## 🧩 Fases del proceso terapéutico
+## Usuarios Demo
 
-| Fase | Nombre                   | Descripción                                      |
-| ---- | ------------------------ | ------------------------------------------------ |
-| 1    | Evaluación               | Anamnesis, tests, diagnóstico diferencial        |
-| 2    | Explicación de hipótesis | Devolver resultados y formular objetivos         |
-| 3    | Tratamiento              | Técnicas terapéuticas según enfoque              |
-| 4    | Seguimiento              | Mantenimiento de logros y prevención de recaídas |
+Password demo: `123`
 
-> Basado en: https://www.unir.net/salud/revista/proceso-terapeutico/
+| Usuario     | Rol        | Ruta        |
+|-------------|------------|-------------|
+| admin       | ADMIN      | /admin      |
+| recepcion   | RECEPCION  | /recepcion  |
+| caja        | CAJA       | /caja       |
+| psicologo   | PSICOLOGO  | /psicologia |
+| anfitriona  | ANFITRIONA | /anfitriona |
 
----
+## Endpoints Principales
 
-## 📝 Notas técnicas
+Auth:
 
-- **JWT** expira en 24 horas. El interceptor Angular lo adjunta automáticamente.
-- **CORS** configurado para `localhost:4200` (dev) y el contenedor `frontend` (prod Docker).
-- El **número de historia clínica** se genera automáticamente: `HC-XXXX`.
-- Los **comprobantes** siguen la serie `B-XXXXX`.
-- La **deuda** se crea automáticamente al registrar una cita; el cajero solo la busca y cobra.
+```text
+POST /api/auth/login
+GET  /api/auth/me
+PUT  /api/auth/me
+POST /api/auth/recuperar
+POST /api/auth/recuperar/verificar
+```
+
+Anfitriona:
+
+```text
+POST /api/anfitriona/tickets/emitir
+GET  /api/anfitriona/tickets/hoy
+```
+
+Recepcion:
+
+```text
+GET   /api/recepcion/tickets
+GET   /api/recepcion/tickets/actual
+PATCH /api/recepcion/tickets/{id}/llamar
+PATCH /api/recepcion/tickets/{id}/finalizar
+GET   /api/recepcion/pacientes/buscar?q=
+GET   /api/recepcion/pacientes/dni/{dni}
+POST  /api/recepcion/pacientes
+GET   /api/recepcion/especialidades
+GET   /api/recepcion/psicologos
+GET   /api/recepcion/psicologos/{id}/horario-disponible
+POST  /api/recepcion/citas
+```
+
+Caja:
+
+```text
+GET  /api/caja/deudas/buscar
+POST /api/caja/pagar/{deudaId}
+GET  /api/caja/comprobantes/{id}
+```
+
+Psicologia:
+
+```text
+GET   /api/psicologia/agenda
+PATCH /api/psicologia/citas/{id}/estado
+GET   /api/psicologia/pacientes/{id}/proceso
+POST  /api/psicologia/pacientes/{id}/proceso
+PATCH /api/psicologia/procesos/{id}/fase
+POST  /api/psicologia/sesiones
+GET   /api/psicologia/sesiones/proceso/{procesoId}
+```
+
+## Verificacion
+
+Backend:
+
+```bash
+cd backend
+./mvnw test
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+Nota: el build frontend puede requerir ajustar budgets de Angular si los estilos/fuentes superan el limite configurado.

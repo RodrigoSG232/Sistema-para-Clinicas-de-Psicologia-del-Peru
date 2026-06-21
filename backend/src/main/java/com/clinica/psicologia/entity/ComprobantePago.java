@@ -11,7 +11,7 @@ public class ComprobantePago {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "numero_comprobante", nullable = false, unique = true, length = 20)
+    @Column(name = "numero_serie", nullable = false, unique = true, length = 20)
     private String numeroComprobante;
 
     @Column(nullable = false, length = 20)
@@ -29,11 +29,10 @@ public class ComprobantePago {
     @Column(name = "monto_pagado", nullable = false, precision = 10, scale = 2)
     private BigDecimal montoPagado;
 
-    @Column(name = "fecha_pago", nullable = false)
+    @Column(name = "fecha_emision", nullable = false)
     @Builder.Default
     private LocalDateTime fechaPago = LocalDateTime.now();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cajero_id")
+    @Transient
     private Usuario cajero;
 }

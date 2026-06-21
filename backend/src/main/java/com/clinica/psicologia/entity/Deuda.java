@@ -25,7 +25,7 @@ public class Deuda {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
 
-    // PENDIENTE | PAGADO
+    // PENDIENTE | PAGADA
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String estado = "PENDIENTE";

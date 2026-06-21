@@ -25,8 +25,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Integer> {
     boolean existsByFechaAndEstado(LocalDate fecha, String estado);
 
     @Query(value = """
-            SELECT COALESCE(MAX(CAST(SUBSTRING(numero, 3, LEN(numero)) AS INT)), 0)
-            FROM Ticket
+            SELECT COALESCE(MAX(CAST(SUBSTRING(numero FROM 3) AS INTEGER)), 0)
+            FROM ticket
             WHERE fecha = :fecha
             """, nativeQuery = true)
     Integer getMaxCorrelativoPorFecha(@Param("fecha") LocalDate fecha);

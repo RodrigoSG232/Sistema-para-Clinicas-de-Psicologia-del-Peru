@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public interface CitaRepository extends JpaRepository<Cita, Integer> {
@@ -19,10 +20,13 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
     FROM Cita c
     WHERE c.psicologo.id = :psicologoId
     AND c.fechaCita = :fecha
-    AND FUNCTION('FORMAT', c.horaCita, 'HH:mm') = :hora
+    AND c.horaCita = :hora
 """)
-    boolean existeCita(Integer psicologoId, LocalDate fecha, String hora);
+    boolean existeCita(Integer psicologoId, LocalDate fecha, LocalTime hora);
     
     @Query("SELECT c FROM Cita c WHERE c.psicologo.id = :psicId AND c.fechaCita = :fecha AND c.estado NOT IN ('CANCELADA','ATENDIDA')")
     List<Cita> findHorasOcupadas(@Param("psicId") Integer psicId, @Param("fecha") LocalDate fecha);
+
+    @Query("SELECT c FROM Cita c LEFT JOIN FETCH c.especialidad LEFT JOIN FETCH c.psicologo LEFT JOIN FETCH c.paciente WHERE c.fechaCita BETWEEN :inicio AND :fin ORDER BY c.fechaCita ASC, c.horaCita ASC")
+    List<Cita> findByRangoFechas(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 }

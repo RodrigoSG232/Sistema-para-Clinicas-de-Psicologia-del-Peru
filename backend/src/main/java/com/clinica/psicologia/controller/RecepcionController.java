@@ -204,7 +204,7 @@ public class RecepcionController {
 
                         // ❌ Validar duplicado (misma fecha, hora y psicólogo)
                         boolean existe = citaRepo.existeCita(
-                                        psicologoId, fecha, hora.toString());
+                                        psicologoId, fecha, hora);
 
                         if (existe) {
                                 return ResponseEntity.badRequest()
@@ -266,11 +266,52 @@ public class RecepcionController {
                 }
         }
 
+        @GetMapping("/citas/semana")
+        public ResponseEntity<List<CitaDTO>> citasSemana(
+                        @RequestParam String inicio,
+                        @RequestParam String fin) {
+                LocalDate fechaInicio = LocalDate.parse(inicio);
+                LocalDate fechaFin = LocalDate.parse(fin);
+
+                List<CitaDTO> citas = citaRepo.findByRangoFechas(fechaInicio, fechaFin).stream()
+                                .map(this::toCitaDTO)
+                                .toList();
+
+                return ResponseEntity.ok(citas);
+        }
+
+        @PatchMapping("/citas/{id}/estado")
+        public ResponseEntity<?> cambiarEstadoCitaRecepcion(
+                        @PathVariable Integer id,
+                        @RequestBody Map<String, String> body) {
+                String estado = body.get("estado");
+                List<String> estadosPermitidos = List.of("PENDIENTE_PAGO", "PAGADA", "CANCELADA");
+
+                if (estado == null || !estadosPermitidos.contains(estado)) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Estado no permitido para recepción"));
+                }
+
+                return citaRepo.findById(id)
+                                .map(cita -> {
+                                        cita.setEstado(estado);
+                                        Cita actualizada = citaRepo.save(cita);
+                                        return ResponseEntity.ok(toCitaDTO(actualizada));
+                                })
+                                .orElse(ResponseEntity.notFound().build());
+        }
+
         @GetMapping("/citas/paciente/{pacienteId}")
         public ResponseEntity<List<CitaDTO>> citasPorPaciente(@PathVariable Integer pacienteId) {
                 List<Cita> citas = citaRepo.findByPacienteIdOrderByCreadoEnDesc(pacienteId);
 
-                List<CitaDTO> citasDTO = citas.stream().map(c -> new CitaDTO(
+                List<CitaDTO> citasDTO = citas.stream().map(this::toCitaDTO).toList();
+
+                return ResponseEntity.ok(citasDTO);
+        }
+
+        private CitaDTO toCitaDTO(Cita c) {
+                return new CitaDTO(
                                 c.getId(),
                                 c.getFechaCita().toString(),
                                 c.getHoraCita().toString(),
@@ -280,8 +321,6 @@ public class RecepcionController {
                                 c.getPaciente().getNombres() + " " + c.getPaciente().getApellidos(),
                                 c.getPaciente().getId(),
                                 c.getPaciente().getDni(),
-                                c.getPaciente().getNumeroHistoria())).toList();
-
-                return ResponseEntity.ok(citasDTO);
+                                c.getPaciente().getNumeroHistoria());
         }
 }

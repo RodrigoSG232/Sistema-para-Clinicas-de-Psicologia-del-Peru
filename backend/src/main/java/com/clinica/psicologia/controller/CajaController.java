@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.clinica.psicologia.dto.DeudaDTO;
-import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +19,6 @@ public class CajaController {
 
     private final DeudaRepository deudaRepo;
     private final ComprobantePagoRepository comprobanteRepo;
-    private final PacienteRepository pacienteRepo;
     private final CitaRepository citaRepo;
     private final UsuarioRepository usuarioRepo;
     private final JwtUtil jwtUtil;
@@ -88,8 +87,8 @@ public class CajaController {
             @PathVariable Integer deudaId,
             @RequestBody Map<String, Object> body,
             @RequestHeader("Authorization") String authHeader) {
-        return deudaRepo.findById(deudaId).map(deuda -> {
-            if ("PAGADO".equals(deuda.getEstado())) {
+        return deudaRepo.findByIdConDetalle(deudaId).map(deuda -> {
+            if ("PAGADA".equals(deuda.getEstado())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body(Map.of("error", "Esta deuda ya fue pagada"));
             }
@@ -114,7 +113,7 @@ public class CajaController {
                     .montoPagado(deuda.getMonto())
                     .cajero(cajero)
                     .build();
-            comprobanteRepo.save(comp);
+            comp = comprobanteRepo.save(comp);
 
             // Marcar deuda como pagada
             deuda.setEstado("PAGADA");
@@ -127,8 +126,10 @@ public class CajaController {
                 citaRepo.save(cita);
             }
 
+            Map<String, Object> comprobanteResponse = toComprobanteResponse(comp, deuda);
+
             return ResponseEntity.ok(Map.of(
-                    "comprobante", comp,
+                    "comprobante", comprobanteResponse,
                     "numeroComprobante", numComp,
                     "mensaje", "Pago registrado exitosamente"
             ));
@@ -138,9 +139,29 @@ public class CajaController {
     // ─── COMPROBANTES ──────────────────────────────────────────────────────────
 
     @GetMapping("/comprobantes/{id}")
-    public ResponseEntity<ComprobantePago> getComprobante(@PathVariable Integer id) {
-        return comprobanteRepo.findById(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<?> getComprobante(@PathVariable Integer id) {
+        return comprobanteRepo.findByIdConDetalle(id)
+                .map(comp -> ResponseEntity.ok(toComprobanteResponse(comp, comp.getDeuda())))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private Map<String, Object> toComprobanteResponse(ComprobantePago comp, Deuda deuda) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("id", comp.getId());
+        response.put("numeroComprobante", comp.getNumeroComprobante());
+        response.put("tipo", comp.getTipo());
+        response.put("medioPago", comp.getMedioPago());
+        response.put("montoPagado", comp.getMontoPagado());
+        response.put("fechaPago", comp.getFechaPago());
+        response.put("deudaId", deuda.getId());
+        response.put("concepto", deuda.getConcepto());
+        response.put("estadoDeuda", deuda.getEstado());
+        response.put("pacienteId", deuda.getPaciente().getId());
+        response.put("pacienteNombre", deuda.getPaciente().getNombres() + " " + deuda.getPaciente().getApellidos());
+        response.put("pacienteDni", deuda.getPaciente().getDni());
+        response.put("especialidad", deuda.getCita() != null && deuda.getCita().getEspecialidad() != null
+                ? deuda.getCita().getEspecialidad().getNombre()
+                : null);
+        return response;
     }
 }
