@@ -12,11 +12,19 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/psicologia")
 @RequiredArgsConstructor
 public class PsicologiaController {
+
+    // Transiciones de estado que este endpoint tiene permitido aplicar.
+    // PAGADA->EN_PISO y EN_PISO/PAGADA->CANCELADA son responsabilidad de otros controllers.
+    private static final Map<String, Set<String>> TRANSICIONES_VALIDAS = Map.of(
+            "EN_PISO", Set.of("EN_CONSULTA"),
+            "EN_CONSULTA", Set.of("ATENDIDA")
+    );
 
     private final CitaRepository citaRepo;
     private final PsicologoRepository psicologoRepo;
@@ -71,8 +79,16 @@ public class PsicologiaController {
         if (id == null) {
             return ResponseEntity.badRequest().build();
         }
+        String nuevoEstado = body.get("estado");
+        if (nuevoEstado == null || nuevoEstado.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El campo 'estado' es requerido"));
+        }
         return citaRepo.findById(id).map(c -> {
-            String nuevoEstado = body.get("estado");
+            Set<String> permitidos = TRANSICIONES_VALIDAS.getOrDefault(c.getEstado(), Set.of());
+            if (!permitidos.contains(nuevoEstado)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No se puede pasar de " + c.getEstado() + " a " + nuevoEstado));
+            }
             c.setEstado(nuevoEstado);
             return ResponseEntity.ok(toCitaDTO(citaRepo.save(c)));
         }).orElse(ResponseEntity.notFound().build());
