@@ -4,8 +4,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+// Sin @Setter a propósito: una vez guardada, una Sesion no se modifica. Si
+// hay que corregir algo, se registra una nota nueva que referencie esta.
+// Reforzado también por un trigger en Postgres (ver patch_sesion_inmutable.sql).
 @Entity @Table(name = "sesion")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Sesion {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

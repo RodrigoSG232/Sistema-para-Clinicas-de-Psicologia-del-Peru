@@ -81,6 +81,25 @@ public class ProcesoTerapeuticoService {
         return toDto(proceso, entrevista);
     }
 
+    @Transactional
+    public ProcesoTerapeuticoDTO actualizarFase(Integer procesoId, Integer nuevaFase, String observaciones) {
+        if (nuevaFase == null || nuevaFase < 1 || nuevaFase > 4) {
+            throw new IllegalArgumentException("Fase inválida (1-4)");
+        }
+
+        ProcesoTerapeutico proceso = procesoRepo.findById(procesoId)
+                .orElseThrow(() -> new NoSuchElementException("Proceso terapéutico no encontrado"));
+
+        proceso.setFaseActual(nuevaFase);
+        if (observaciones != null) {
+            proceso.setObservaciones(observaciones);
+        }
+        ProcesoTerapeutico guardado = procesoRepo.save(proceso);
+
+        EntrevistaInicial entrevista = entrevistaRepo.findByProcesoTerapeuticoId(guardado.getId()).orElse(null);
+        return toDto(guardado, entrevista);
+    }
+
     private ProcesoTerapeuticoDTO toDto(ProcesoTerapeutico p, EntrevistaInicial entrevista) {
         EntrevistaInicialDTO entrevistaDTO = entrevista == null ? null : new EntrevistaInicialDTO(
                 entrevista.getId(),

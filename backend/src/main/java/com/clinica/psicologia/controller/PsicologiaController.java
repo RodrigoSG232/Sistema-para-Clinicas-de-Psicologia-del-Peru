@@ -142,18 +142,12 @@ public class PsicologiaController {
     }
 
     @PatchMapping("/procesos/{procesoId}/fase")
-    public ResponseEntity<?> actualizarFase(
+    public ResponseEntity<ProcesoTerapeuticoDTO> actualizarFase(
             @PathVariable Integer procesoId,
             @RequestBody Map<String, Object> body) {
-        return procesoRepo.findById(procesoId).map(p -> {
-            Integer nuevaFase = (Integer) body.get("faseActual");
-            if (nuevaFase < 1 || nuevaFase > 4)
-                return ResponseEntity.badRequest().body(Map.of("error", "Fase inválida (1-4)"));
-            p.setFaseActual(nuevaFase);
-            if (body.containsKey("observaciones"))
-                p.setObservaciones((String) body.get("observaciones"));
-            return ResponseEntity.ok(procesoRepo.save(p));
-        }).orElse(ResponseEntity.notFound().build());
+        Integer nuevaFase = parseEntero(body.get("faseActual"));
+        String observaciones = (String) body.get("observaciones");
+        return ResponseEntity.ok(procesoService.actualizarFase(procesoId, nuevaFase, observaciones));
     }
 
     // ─── SESIONES ──────────────────────────────────────────────────────────────
@@ -163,11 +157,11 @@ public class PsicologiaController {
             @RequestBody Map<String, Object> body,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            Integer citaId     = (Integer) body.get("citaId");
-            Integer procesoId  = (Integer) body.get("procesoId");
+            Integer citaId     = parseEntero(body.get("citaId"));
+            Integer procesoId  = parseEntero(body.get("procesoId"));
             String  evolucion  = (String)  body.get("evolucion");
             String  indicaciones = (String) body.get("indicaciones");
-            Integer faseSesion = (Integer) body.get("faseSesion");
+            Integer faseSesion = parseEntero(body.get("faseSesion"));
 
             String token = authHeader.replace("Bearer ", "");
             String username = jwtUtil.extractUsername(token);
@@ -210,6 +204,16 @@ public class PsicologiaController {
         return pacienteRepo.findById(pacienteId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Jackson deserializa los numeros de un Map<String,Object> como Integer,
+    // pero si el cliente manda ese mismo campo como string (ej. el value de
+    // un <select> nativo), llega como String. Acepta ambos en vez de romper
+    // con ClassCastException.
+    private Integer parseEntero(Object valor) {
+        if (valor == null) return null;
+        if (valor instanceof Integer) return (Integer) valor;
+        return Integer.parseInt(valor.toString());
     }
 
     private SesionDTO toSesionDTO(Sesion sesion) {
