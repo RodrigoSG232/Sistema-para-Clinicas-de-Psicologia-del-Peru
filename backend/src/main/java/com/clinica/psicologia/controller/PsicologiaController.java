@@ -1,9 +1,12 @@
 package com.clinica.psicologia.controller;
 
 import com.clinica.psicologia.dto.CitaDTO;
+import com.clinica.psicologia.dto.ProcesoTerapeuticoDTO;
+import com.clinica.psicologia.dto.SesionDTO;
 import com.clinica.psicologia.entity.*;
 import com.clinica.psicologia.repository.*;
 import com.clinica.psicologia.security.JwtUtil;
+import com.clinica.psicologia.service.ProcesoTerapeuticoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +36,7 @@ public class PsicologiaController {
     private final SesionRepository sesionRepo;
     private final UsuarioRepository usuarioRepo;
     private final JwtUtil jwtUtil;
+    private final ProcesoTerapeuticoService procesoService;
 
     // ─── AGENDA ────────────────────────────────────────────────────────────────
 
@@ -97,10 +101,8 @@ public class PsicologiaController {
     // ─── HISTORIA CLÍNICA / PROCESO TERAPÉUTICO ───────────────────────────────
 
     @GetMapping("/pacientes/{pacienteId}/proceso")
-    public ResponseEntity<?> getProceso(@PathVariable Integer pacienteId) {
-        return procesoRepo.findByPacienteIdAndActivoTrue(pacienteId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ProcesoTerapeuticoDTO> getProceso(@PathVariable Integer pacienteId) {
+        return ResponseEntity.ok(procesoService.obtenerProcesoActivo(pacienteId));
     }
 
     @PostMapping("/pacientes/{pacienteId}/proceso")
@@ -108,14 +110,18 @@ public class PsicologiaController {
             @PathVariable Integer pacienteId,
             @RequestBody Map<String, Object> body,
             @RequestHeader("Authorization") String authHeader) {
-        // Verificar que no tenga proceso activo
-        if (procesoRepo.findByPacienteIdAndActivoTrue(pacienteId).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "El paciente ya tiene un proceso terapéutico activo"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entrevistaBody = (Map<String, Object>) body.get("entrevista");
+        if (entrevistaBody == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El campo 'entrevista' es requerido"));
         }
-
-        if (pacienteId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "ID de paciente inválido"));
+        String motivoConsulta = (String) entrevistaBody.get("motivoConsulta");
+        if (motivoConsulta == null || motivoConsulta.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El motivo de consulta es requerido"));
+        }
+        Integer citaId = (Integer) body.get("citaId");
+        if (citaId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El campo 'citaId' es requerido"));
         }
 
         String token = authHeader.replace("Bearer ", "");
@@ -124,9 +130,15 @@ public class PsicologiaController {
         Psicologo psic = psicologoRepo.findByUsuarioId(usuario.getId()).orElseThrow();
         Paciente  pac  = pacienteRepo.findById(pacienteId).orElseThrow();
 
-        ProcesoTerapeutico proceso = ProcesoTerapeutico.builder()
-                .paciente(pac).psicologo(psic).faseActual(1).build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(procesoRepo.save(proceso));
+        EntrevistaInicial entrevista = EntrevistaInicial.builder()
+                .motivoConsulta(motivoConsulta)
+                .antecedentesPersonales((String) entrevistaBody.get("antecedentesPersonales"))
+                .antecedentesFamiliares((String) entrevistaBody.get("antecedentesFamiliares"))
+                .observacionesIniciales((String) entrevistaBody.get("observacionesIniciales"))
+                .build();
+
+        ProcesoTerapeuticoDTO dto = procesoService.iniciarProcesoConEntrevista(pac, psic, citaId, usuario, entrevista);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     @PatchMapping("/procesos/{procesoId}/fase")
@@ -178,7 +190,7 @@ public class PsicologiaController {
             cita.setEstado("ATENDIDA");
             citaRepo.save(cita);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toSesionDTO(saved));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
@@ -186,9 +198,11 @@ public class PsicologiaController {
     }
 
     @GetMapping("/sesiones/proceso/{procesoId}")
-    public ResponseEntity<List<Sesion>> sesionesPorProceso(@PathVariable Integer procesoId) {
+    public ResponseEntity<List<SesionDTO>> sesionesPorProceso(@PathVariable Integer procesoId) {
         return ResponseEntity.ok(
-                sesionRepo.findByProcesoTerapeuticoIdOrderByFechaRegistroDesc(procesoId));
+                sesionRepo.findByProcesoTerapeuticoIdOrderByFechaRegistroDesc(procesoId).stream()
+                        .map(this::toSesionDTO)
+                        .toList());
     }
 
     @GetMapping("/pacientes/{pacienteId}")
@@ -196,6 +210,17 @@ public class PsicologiaController {
         return pacienteRepo.findById(pacienteId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private SesionDTO toSesionDTO(Sesion sesion) {
+        return new SesionDTO(
+                sesion.getId(),
+                sesion.getFechaRegistro().toString(),
+                sesion.getFaseSesion(),
+                sesion.getEvolucion(),
+                sesion.getIndicacionesPaciente(),
+                sesion.getRegistradoPor() != null ? sesion.getRegistradoPor().getNombreCompleto() : null
+        );
     }
 
     private CitaDTO toCitaDTO(Cita cita) {
