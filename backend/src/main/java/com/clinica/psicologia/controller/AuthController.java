@@ -31,23 +31,27 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         if (req.getUsername() == null || req.getPassword() == null) {
-            return ResponseEntity.status(401).body("Credenciales inválidas");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Credenciales inválidas"));
         }
 
         var userOpt = usuarioRepo.findByUsername(req.getUsername());
 
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(401).body("Credenciales inválidas");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Credenciales inválidas"));
         }
 
         var u = userOpt.get();
 
         if (!Boolean.TRUE.equals(u.getActivo())) {
-            return ResponseEntity.status(401).body("Usuario inactivo");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Usuario inactivo"));
         }
 
         if (!passwordEncoder.matches(req.getPassword(), u.getPasswordHash())) {
-            return ResponseEntity.status(401).body("Credenciales inválidas");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Credenciales inválidas"));
         }
 
         String token = jwtUtil.generateToken(u.getUsername(), u.getRol().getNombre());
