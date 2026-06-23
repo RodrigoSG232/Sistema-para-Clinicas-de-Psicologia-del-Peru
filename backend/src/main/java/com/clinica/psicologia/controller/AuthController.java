@@ -51,15 +51,47 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(u.getUsername(), u.getRol().getNombre());
+        String refreshToken = jwtUtil.generateRefreshToken(u.getUsername(), u.getRol().getNombre());
         String ruta = rutaPorRol(u.getRol().getNombre());
 
         return ResponseEntity.ok(new LoginResponse(
             token,
+            refreshToken,
             u.getUsername(),
             u.getNombreCompleto(),
             u.getRol().getNombre(),
             ruta
         ));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isBlank() || !jwtUtil.validateRefreshToken(refreshToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Refresh token inválido"));
+        }
+
+        String username = jwtUtil.extractUsername(refreshToken);
+        return usuarioRepo.findByUsername(username).map(u -> {
+            if (!Boolean.TRUE.equals(u.getActivo())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Usuario inactivo"));
+            }
+
+            String nuevoToken = jwtUtil.generateToken(u.getUsername(), u.getRol().getNombre());
+            String nuevoRefreshToken = jwtUtil.generateRefreshToken(u.getUsername(), u.getRol().getNombre());
+            String ruta = rutaPorRol(u.getRol().getNombre());
+
+            return ResponseEntity.ok(new LoginResponse(
+                    nuevoToken,
+                    nuevoRefreshToken,
+                    u.getUsername(),
+                    u.getNombreCompleto(),
+                    u.getRol().getNombre(),
+                    ruta
+            ));
+        }).orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Usuario no encontrado")));
     }
 
     // ─── PERFIL ───────────────────────────────────────────────────────────────

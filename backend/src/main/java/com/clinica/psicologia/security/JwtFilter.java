@@ -34,7 +34,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
-            if (jwtUtil.validateToken(token)) {
+            if (jwtUtil.validateAccessToken(token)) {
                 String username = jwtUtil.extractUsername(token);
                 String rol = jwtUtil.extractRol(token);
                 String authority = rol.startsWith("ROLE_") ? rol : "ROLE_" + rol;
@@ -54,6 +54,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         return ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/login"))
+            || ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/refresh"))
             || ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/recuperar"))
             || ("POST".equalsIgnoreCase(method) && path.equals("/api/auth/recuperar/verificar"))
             || path.startsWith("/api/public/")
