@@ -1,0 +1,10 @@
+**/target
+**/.mvn
+**/mvnw
+**/mvnw.cmd
+**/.gitignore
+**/.gitattributes
+.idea
+.vscode
+README.md
+scripts

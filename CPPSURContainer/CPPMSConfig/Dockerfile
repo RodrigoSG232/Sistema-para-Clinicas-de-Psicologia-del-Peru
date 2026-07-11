@@ -1,0 +1,31 @@
+FROM maven:3.9.11-eclipse-temurin-17-alpine AS build
+
+WORKDIR /workspace
+
+COPY pom.xml ./
+COPY CPPMSConfig/pom.xml CPPMSConfig/pom.xml
+COPY CPPMSEureka/pom.xml CPPMSEureka/pom.xml
+COPY CPPMSGateway/pom.xml CPPMSGateway/pom.xml
+
+RUN mvn --batch-mode --no-transfer-progress \
+    -pl CPPMSConfig -am dependency:go-offline
+
+COPY CPPMSConfig/src CPPMSConfig/src
+
+RUN mvn --batch-mode --no-transfer-progress \
+    -pl CPPMSConfig -am package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+
+LABEL org.opencontainers.image.title="CPP Config Server" \
+      org.opencontainers.image.description="Configuracion centralizada de la plataforma CPP"
+
+RUN addgroup -S cpp && adduser -S cpp -G cpp
+
+WORKDIR /app
+COPY --from=build /workspace/CPPMSConfig/target/cpp-config-server-*.jar app.jar
+
+USER cpp
+EXPOSE 8888
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

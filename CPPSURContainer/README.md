@@ -49,3 +49,30 @@ puede validar con:
 El Config Server usa temporalmente un repositorio `native` incluido en su
 classpath. Esta opcion mantiene el primer entorno reproducible; posteriormente
 puede sustituirse por un repositorio Git.
+
+## Docker
+
+La infraestructura se puede construir y levantar desde este directorio:
+
+```bash
+docker compose -f compose.infrastructure.yaml up --build -d --wait
+```
+
+Para consultar su estado:
+
+```bash
+docker compose -f compose.infrastructure.yaml ps
+```
+
+Para detenerla sin eliminar imagenes:
+
+```bash
+docker compose -f compose.infrastructure.yaml down
+```
+
+La comprobacion automatizada construye, levanta, valida y finalmente detiene
+los tres contenedores:
+
+```bash
+./scripts/verify-docker-infrastructure.sh
+```

@@ -1,0 +1,90 @@
+name: cpp-infrastructure
+
+services:
+  config-server:
+    image: cpp/config-server:0.1.0
+    build:
+      context: .
+      dockerfile: CPPMSConfig/Dockerfile
+    environment:
+      CONFIG_SERVER_PORT: 8888
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports:
+      - "8888:8888"
+    networks:
+      - cpp-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    mem_limit: 384m
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  eureka-server:
+    image: cpp/eureka-server:0.1.0
+    build:
+      context: .
+      dockerfile: CPPMSEureka/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_HOSTNAME: eureka-server
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports:
+      - "8761:8761"
+    networks:
+      - cpp-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 18
+      start_period: 20s
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  api-gateway:
+    image: cpp/api-gateway:0.1.0
+    build:
+      context: .
+      dockerfile: CPPMSGateway/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports:
+      - "8080:8080"
+    networks:
+      - cpp-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 18
+      start_period: 20s
+    mem_limit: 384m
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+networks:
+  cpp-network:
+    name: cpp-network
+    driver: bridge
