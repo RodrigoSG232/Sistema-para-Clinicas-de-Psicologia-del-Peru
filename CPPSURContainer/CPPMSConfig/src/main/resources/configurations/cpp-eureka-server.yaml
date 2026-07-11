@@ -1,12 +1,6 @@
 server:
   port: ${EUREKA_SERVER_PORT:8761}
 
-spring:
-  application:
-    name: cpp-eureka-server
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
-
 eureka:
   instance:
     hostname: ${EUREKA_HOSTNAME:localhost}
@@ -27,8 +21,3 @@ management:
     health:
       probes:
         enabled: true
-
-info:
-  app:
-    name: CPP Eureka Server
-    description: Registro y descubrimiento de microservicios CPP
