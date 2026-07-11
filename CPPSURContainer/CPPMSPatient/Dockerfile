@@ -10,25 +10,25 @@ COPY CPPMSPatient/pom.xml CPPMSPatient/pom.xml
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSGateway -am dependency:go-offline
+    -pl CPPMSPatient -am dependency:go-offline
 
-COPY CPPMSGateway/src CPPMSGateway/src
+COPY CPPMSPatient/src CPPMSPatient/src
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSGateway -am package -DskipTests
+    -pl CPPMSPatient -am package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 
-LABEL org.opencontainers.image.title="CPP API Gateway" \
-      org.opencontainers.image.description="Punto de entrada de los microservicios CPP"
+LABEL org.opencontainers.image.title="CPP Patient Service" \
+      org.opencontainers.image.description="Gestion independiente de pacientes e historias clinicas"
 
 RUN addgroup -S cpp && adduser -S cpp -G cpp
 
 WORKDIR /app
-COPY --from=build /workspace/CPPMSGateway/target/cpp-api-gateway-*.jar app.jar
+COPY --from=build /workspace/CPPMSPatient/target/cpp-patient-service-*.jar app.jar
 
 USER cpp
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -6,13 +6,16 @@ COPY pom.xml ./
 COPY CPPMSConfig/pom.xml CPPMSConfig/pom.xml
 COPY CPPMSEureka/pom.xml CPPMSEureka/pom.xml
 COPY CPPMSGateway/pom.xml CPPMSGateway/pom.xml
+COPY CPPMSPatient/pom.xml CPPMSPatient/pom.xml
 
-RUN mvn --batch-mode --no-transfer-progress \
+RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
+    mvn --batch-mode --no-transfer-progress \
     -pl CPPMSConfig -am dependency:go-offline
 
 COPY CPPMSConfig/src CPPMSConfig/src
 
-RUN mvn --batch-mode --no-transfer-progress \
+RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
+    mvn --batch-mode --no-transfer-progress \
     -pl CPPMSConfig -am package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine

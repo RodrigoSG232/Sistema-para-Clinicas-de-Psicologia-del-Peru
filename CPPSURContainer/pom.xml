@@ -52,5 +52,6 @@
         <module>CPPMSConfig</module>
         <module>CPPMSEureka</module>
         <module>CPPMSGateway</module>
+        <module>CPPMSPatient</module>
     </modules>
 </project>

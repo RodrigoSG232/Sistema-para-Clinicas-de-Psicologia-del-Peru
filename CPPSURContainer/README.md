@@ -76,3 +76,33 @@ los tres contenedores:
 ```bash
 ./scripts/verify-docker-infrastructure.sh
 ```
+
+## Primer microservicio de negocio: pacientes
+
+`CPPMSPatient` extrae del monolito el alta y la consulta de pacientes. El
+servicio usa una base MySQL exclusiva y Flyway crea su esquema al iniciar.
+Durante esta etapa de migracion, las operaciones originales permanecen en el
+monolito; el nuevo contrato se publica bajo `/api/patients/**`.
+
+Para levantar infraestructura, MySQL y el servicio de pacientes:
+
+```bash
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  up --build -d --wait
+```
+
+MySQL queda disponible en el puerto local `3307` y el servicio en `8081`,
+aunque las solicitudes de negocio deben entrar por Gateway en el puerto
+`8080`.
+
+La verificacion integral crea un entorno temporal, comprueba Config Server,
+el registro en Eureka, la ruta de Gateway y la persistencia en MySQL:
+
+```bash
+./scripts/verify-patient-service.sh
+```
+
+Las credenciales incluidas en Compose son exclusivamente para desarrollo
+local. En despliegues reales se sustituiran por secretos del orquestador.

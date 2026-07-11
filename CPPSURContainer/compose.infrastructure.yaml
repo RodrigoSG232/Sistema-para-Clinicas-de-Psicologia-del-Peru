@@ -86,5 +86,4 @@ services:
 
 networks:
   cpp-network:
-    name: cpp-network
     driver: bridge
