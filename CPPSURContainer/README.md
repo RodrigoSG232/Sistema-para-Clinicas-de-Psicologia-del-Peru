@@ -106,3 +106,30 @@ el registro en Eureka, la ruta de Gateway y la persistencia en MySQL:
 
 Las credenciales incluidas en Compose son exclusivamente para desarrollo
 local. En despliegues reales se sustituiran por secretos del orquestador.
+
+## Segundo microservicio de negocio: agenda y citas
+
+`CPPMSScheduling` administra especialidades, psicologos, horarios y citas en
+una base PostgreSQL exclusiva. Al reservar, valida el identificador contra
+`CPPMSPatient` mediante Eureka y conserva una instantanea minima del paciente;
+no existe ninguna clave foranea entre PostgreSQL y MySQL.
+
+Para levantar los dos servicios de negocio y sus bases:
+
+```bash
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  up --build -d --wait
+```
+
+PostgreSQL se publica localmente en `5433` y agenda en `8082`. El contrato
+publico entra por Gateway bajo `/api/scheduling/**`.
+
+La prueba integral crea un paciente, obtiene el catalogo, agenda una cita y
+comprueba que PostgreSQL rechace una segunda reserva para la misma franja:
+
+```bash
+./scripts/verify-scheduling-service.sh
+```

@@ -11,25 +11,25 @@ COPY CPPMSScheduling/pom.xml CPPMSScheduling/pom.xml
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSConfig -am dependency:go-offline
+    -pl CPPMSScheduling -am dependency:go-offline
 
-COPY CPPMSConfig/src CPPMSConfig/src
+COPY CPPMSScheduling/src CPPMSScheduling/src
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSConfig -am package -DskipTests
+    -pl CPPMSScheduling -am package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 
-LABEL org.opencontainers.image.title="CPP Config Server" \
-      org.opencontainers.image.description="Configuracion centralizada de la plataforma CPP"
+LABEL org.opencontainers.image.title="CPP Scheduling Service" \
+      org.opencontainers.image.description="Gestion independiente de agenda, psicologos y citas"
 
 RUN addgroup -S cpp && adduser -S cpp -G cpp
 
 WORKDIR /app
-COPY --from=build /workspace/CPPMSConfig/target/cpp-config-server-*.jar app.jar
+COPY --from=build /workspace/CPPMSScheduling/target/cpp-scheduling-service-*.jar app.jar
 
 USER cpp
-EXPOSE 8888
+EXPOSE 8082
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
