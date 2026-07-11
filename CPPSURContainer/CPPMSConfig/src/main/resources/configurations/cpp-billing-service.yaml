@@ -1,0 +1,38 @@
+server:
+  port: ${BILLING_SERVICE_PORT:8083}
+
+spring:
+  datasource:
+    url: ${BILLING_DB_URL:jdbc:sqlserver://localhost:1434;databaseName=cpp_billing;encrypt=true;trustServerCertificate=true}
+    username: ${BILLING_DB_USER:sa}
+    password: ${BILLING_DB_PASSWORD:CppBilling!2026Dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+billing:
+  database:
+    name: ${BILLING_DB_NAME:cpp_billing}
+    auto-create: ${BILLING_DB_AUTO_CREATE:true}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized

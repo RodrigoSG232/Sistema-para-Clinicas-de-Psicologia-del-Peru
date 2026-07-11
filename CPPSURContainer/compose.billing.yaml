@@ -1,0 +1,68 @@
+services:
+  billing-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "CppBilling!2026Dev"
+      MSSQL_PID: Developer
+      TZ: America/Lima
+    ports:
+      - "1434:1433"
+    volumes:
+      - billing-db-data:/var/opt/mssql
+    networks:
+      - cpp-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" ||
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1"
+      interval: 10s
+      timeout: 8s
+      retries: 30
+      start_period: 40s
+    mem_limit: 2g
+    restart: unless-stopped
+
+  billing-service:
+    image: cpp/billing-service:0.1.0
+    build:
+      context: .
+      dockerfile: CPPMSBilling/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      BILLING_DB_URL: jdbc:sqlserver://billing-db:1433;databaseName=cpp_billing;encrypt=true;trustServerCertificate=true
+      BILLING_DB_USER: sa
+      BILLING_DB_PASSWORD: "CppBilling!2026Dev"
+      BILLING_DB_NAME: cpp_billing
+      BILLING_DB_AUTO_CREATE: "true"
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports:
+      - "8083:8083"
+    networks:
+      - cpp-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      scheduling-service:
+        condition: service_healthy
+      billing-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8083/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 35s
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+volumes:
+  billing-db-data:

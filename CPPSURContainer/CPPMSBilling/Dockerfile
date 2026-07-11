@@ -12,25 +12,25 @@ COPY CPPMSBilling/pom.xml CPPMSBilling/pom.xml
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSConfig -am dependency:go-offline
+    -pl CPPMSBilling -am dependency:go-offline
 
-COPY CPPMSConfig/src CPPMSConfig/src
+COPY CPPMSBilling/src CPPMSBilling/src
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
-    -pl CPPMSConfig -am package -DskipTests
+    -pl CPPMSBilling -am package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 
-LABEL org.opencontainers.image.title="CPP Config Server" \
-      org.opencontainers.image.description="Configuracion centralizada de la plataforma CPP"
+LABEL org.opencontainers.image.title="CPP Billing Service" \
+      org.opencontainers.image.description="Gestion independiente de deudas, pagos y comprobantes"
 
 RUN addgroup -S cpp && adduser -S cpp -G cpp
 
 WORKDIR /app
-COPY --from=build /workspace/CPPMSConfig/target/cpp-config-server-*.jar app.jar
+COPY --from=build /workspace/CPPMSBilling/target/cpp-billing-service-*.jar app.jar
 
 USER cpp
-EXPOSE 8888
+EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

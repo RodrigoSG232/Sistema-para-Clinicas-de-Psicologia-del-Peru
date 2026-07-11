@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: cpp-billing-service
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: CPP Billing Service
+    description: Gestion independiente de deudas, pagos y comprobantes

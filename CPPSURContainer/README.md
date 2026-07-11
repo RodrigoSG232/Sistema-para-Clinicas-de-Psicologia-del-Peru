@@ -133,3 +133,36 @@ comprueba que PostgreSQL rechace una segunda reserva para la misma franja:
 ```bash
 ./scripts/verify-scheduling-service.sh
 ```
+
+## Tercer microservicio de negocio: facturacion
+
+`CPPMSBilling` extrae las deudas, pagos y comprobantes del monolito. Utiliza
+SQL Server como base exclusiva y obtiene los datos de una cita consultando a
+`CPPMSScheduling` por Eureka. Al registrar un pago solicita a Agenda cambiar
+la cita a `PAGADA`; nunca escribe directamente en PostgreSQL.
+
+Para levantar los tres servicios de negocio y sus bases:
+
+```bash
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  -f compose.billing.yaml \
+  up --build -d --wait
+```
+
+SQL Server se publica localmente en `1434` y Facturacion en `8083`. La API
+publica se encuentra bajo `/api/billing/**` en Gateway.
+
+La prueba integral recorre MySQL, PostgreSQL y SQL Server: crea un paciente,
+agenda una cita, genera su deuda, registra el pago, emite el comprobante y
+comprueba que Agenda reciba el estado `PAGADA`:
+
+```bash
+./scripts/verify-billing-service.sh
+```
+
+SQL Server necesita mas memoria que MySQL y PostgreSQL; para la prueba local
+el contenedor tiene un limite de 2 GB. Las credenciales de Compose son solo
+para desarrollo y deben convertirse en secretos al desplegar Kubernetes.

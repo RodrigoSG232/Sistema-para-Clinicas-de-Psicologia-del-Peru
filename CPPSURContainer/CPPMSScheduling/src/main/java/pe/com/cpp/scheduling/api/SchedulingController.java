@@ -59,6 +59,11 @@ public class SchedulingController {
         return schedulingService.findByPatient(patientId);
     }
 
+    @GetMapping("/appointments/{id}")
+    public AppointmentResponse findAppointmentById(@PathVariable Integer id) {
+        return schedulingService.findAppointmentById(id);
+    }
+
     @GetMapping("/appointments/week")
     public List<AppointmentResponse> findByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,

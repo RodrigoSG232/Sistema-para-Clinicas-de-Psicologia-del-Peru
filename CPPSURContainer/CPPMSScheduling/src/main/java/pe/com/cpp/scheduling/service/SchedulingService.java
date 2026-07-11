@@ -134,6 +134,13 @@ public class SchedulingService {
     }
 
     @Transactional(readOnly = true)
+    public AppointmentResponse findAppointmentById(Integer appointmentId) {
+        return appointmentRepository.findById(appointmentId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+    }
+
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> findByDateRange(java.time.LocalDate start, java.time.LocalDate end) {
         if (end.isBefore(start)) {
             throw new BusinessRuleException("La fecha final no puede ser anterior a la fecha inicial");
@@ -148,6 +155,9 @@ public class SchedulingService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
         AppointmentStatus newStatus = fromExternalStatus(externalStatus);
+        if (appointment.getStatus() == newStatus) {
+            return toResponse(appointment);
+        }
         Set<AppointmentStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(appointment.getStatus(), Set.of());
         if (!allowed.contains(newStatus)) {
             throw new BusinessRuleException("Transición de estado no permitida: "

@@ -8,6 +8,7 @@ COPY CPPMSEureka/pom.xml CPPMSEureka/pom.xml
 COPY CPPMSGateway/pom.xml CPPMSGateway/pom.xml
 COPY CPPMSPatient/pom.xml CPPMSPatient/pom.xml
 COPY CPPMSScheduling/pom.xml CPPMSScheduling/pom.xml
+COPY CPPMSBilling/pom.xml CPPMSBilling/pom.xml
 
 RUN --mount=type=cache,id=cpp-maven-repository,target=/root/.m2,sharing=shared \
     mvn --batch-mode --no-transfer-progress \
