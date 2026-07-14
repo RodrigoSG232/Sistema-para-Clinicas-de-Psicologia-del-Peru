@@ -267,8 +267,70 @@ Para eliminar el clúster y sus datos persistentes locales:
 ```
 
 Los valores de `k8s/base/config.yaml` son credenciales exclusivas para la
-demostración local. Antes de desplegar en nube deben reemplazarse por secretos
-externos o por el gestor de secretos de la plataforma. En nube tampoco se deben
-publicar Eureka, Config Server ni los puertos de las bases de datos; el único
-punto de entrada público será un Ingress delante del Gateway y de la fachada de
-identidad.
+demostración local. Antes de una puesta real en producción deben reemplazarse
+por secretos externos o por el gestor de secretos de la plataforma.
+
+## Despliegue mínimo en Azure con LoadBalancer
+
+La ruta mínima para la entrega mantiene las bases de datos dentro del clúster
+Kubernetes y publica solo dos puntos HTTP mediante `LoadBalancer`:
+
+- `frontend`: URL principal para abrir Angular.
+- `api-gateway`: URL técnica para demostrar las rutas de microservicios.
+
+Las bases de datos no se publican a internet. MySQL, PostgreSQL y SQL Server se
+ejecutan como `Deployment` internos con `PersistentVolumeClaim`, igual que en
+Kind. Esta ruta sirve para exposición académica; para producción se deben usar
+bases gestionadas y secretos reales.
+
+Requisitos:
+
+- Azure CLI autenticado con `az login`.
+- Un Azure Container Registry.
+- Un clúster AKS conectado al ACR.
+- `kubectl` apuntando al clúster AKS.
+- Docker activo.
+
+Ejemplo de variables:
+
+```bash
+export ACR_NAME=cppregistry
+export ACR_LOGIN_SERVER=cppregistry.azurecr.io
+```
+
+Para construir y subir las diez imágenes propias al ACR:
+
+```bash
+./scripts/azure-build-push.sh
+```
+
+Para desplegar la plataforma completa en AKS:
+
+```bash
+./scripts/azure-deploy-minimal.sh
+```
+
+Cuando Azure haya asignado IP pública a los servicios `LoadBalancer`, la
+verificación muestra las URLs que van en el informe:
+
+```bash
+./scripts/azure-verify-minimal.sh
+```
+
+Las URLs resultantes tendrán esta forma:
+
+```text
+Frontend: http://<IP_PUBLICA_FRONTEND>/
+Gateway:  http://<IP_PUBLICA_GATEWAY>:8080/
+```
+
+En el índice del informe, `URL de los Microservicios Desplegados en la nube`
+puede documentarse con la URL del Gateway y una tabla de rutas:
+
+```text
+GET /api/patients/search?q=87654321
+GET /api/scheduling/specialties
+GET /api/billing/debts
+GET /api/clinical/diagnoses/cie10?q=
+GET /api/queue/public/display
+```

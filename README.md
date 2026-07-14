@@ -124,6 +124,22 @@ En este modo Angular queda en `http://localhost:4200`. Todas sus llamadas
 reenvía internamente los dominios de negocio. El Gateway continúa disponible en
 `http://localhost:8086` para comprobaciones técnicas de la infraestructura.
 
+Para la ruta mínima en nube se usa Azure/AKS con servicios `LoadBalancer`.
+Desde `CPPSURContainer`, primero se publican las imágenes propias en Azure
+Container Registry y luego se aplica el overlay Kubernetes de nube:
+
+```bash
+export ACR_NAME=cppregistry
+export ACR_LOGIN_SERVER=cppregistry.azurecr.io
+./scripts/azure-build-push.sh
+./scripts/azure-deploy-minimal.sh
+./scripts/azure-verify-minimal.sh
+```
+
+Esta ruta mantiene las bases de datos dentro del clúster AKS y expone solo el
+frontend y el Gateway. Las URLs públicas generadas por
+`azure-verify-minimal.sh` son las que se documentan en el informe.
+
 ## Usuarios Demo
 
 Password demo: `123`
