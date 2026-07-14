@@ -54,11 +54,11 @@ services:
       APP_JWT_SECRET: "cLinIcApsIcOlOgIaPerU2025SecretKeyLong256BitsXXXXX"
       APP_JWT_EXPIRATION_MS: 86400000
       SPRING_PROFILES_ACTIVE: docker
-      CLINICAL_SERVICE_URL: http://host.docker.internal:8084
-      QUEUE_SERVICE_URL: http://host.docker.internal:8085
-      PATIENT_SERVICE_URL: http://host.docker.internal:8081
-      SCHEDULING_SERVICE_URL: http://host.docker.internal:8082
-      BILLING_SERVICE_URL: http://host.docker.internal:8083
+      CLINICAL_SERVICE_URL: http://clinical-service:8084
+      QUEUE_SERVICE_URL: http://queue-service:8085
+      PATIENT_SERVICE_URL: http://patient-service:8081
+      SCHEDULING_SERVICE_URL: http://scheduling-service:8082
+      BILLING_SERVICE_URL: http://billing-service:8083
       INTERNAL_API_KEY: cpp-internal-dev-key
     ports:
       - "8080:8080"
@@ -67,6 +67,7 @@ services:
         condition: service_completed_successfully
     networks:
       - clinica_net
+      - cpp_network
     restart: on-failure
 
   frontend:

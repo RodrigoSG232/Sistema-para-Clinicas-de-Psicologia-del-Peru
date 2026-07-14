@@ -129,8 +129,12 @@ Desde `CPPSURContainer`, primero se publican las imágenes propias en Azure
 Container Registry y luego se aplica el overlay Kubernetes de nube:
 
 ```bash
+export AZURE_RESOURCE_GROUP=rg-cpp-microservices
+export AKS_NAME=aks-cpp-microservices
 export ACR_NAME=cppregistry
 export ACR_LOGIN_SERVER=cppregistry.azurecr.io
+export CONFIRM_AZURE_COSTS=true
+./scripts/azure-create-resources.sh
 ./scripts/azure-build-push.sh
 ./scripts/azure-deploy-minimal.sh
 ./scripts/azure-verify-minimal.sh

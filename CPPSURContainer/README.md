@@ -291,6 +291,20 @@ Requisitos:
 - `kubectl` apuntando al clúster AKS.
 - Docker activo.
 
+Si todavía no existen ACR y AKS, se pueden crear con:
+
+```bash
+export AZURE_LOCATION=eastus
+export AZURE_RESOURCE_GROUP=rg-cpp-microservices
+export AKS_NAME=aks-cpp-microservices
+export ACR_NAME=cppms12345
+export CONFIRM_AZURE_COSTS=true
+./scripts/azure-create-resources.sh
+```
+
+`ACR_NAME` debe ser único globalmente en Azure, usar solo minúsculas y números,
+y tener entre 5 y 50 caracteres.
+
 Ejemplo de variables:
 
 ```bash
