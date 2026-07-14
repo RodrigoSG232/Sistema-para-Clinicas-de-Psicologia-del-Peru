@@ -1,231 +1,259 @@
-# Sistema de Clinicas Psicologia del Peru
+# Sistema para Clínicas de Psicología del Perú
 
-Sistema de gestion clinica para la sucursal Cono Sur. Cubre flujos de anfitriona, recepcion, caja y psicologia con autenticacion JWT, backend Spring Boot y base de datos PostgreSQL en Neon.
+Guía paso a paso para levantar el proyecto completo con Docker.
 
-## Estructura
+## 1. Requisitos
+
+Antes de iniciar, asegúrate de tener instalado:
+
+- Git.
+- Docker.
+- Docker Compose.
+
+Verifica que Docker esté funcionando:
+
+```bash
+docker info
+```
+
+Si el comando muestra información de Docker, puedes continuar.
+
+## 2. Clonar el repositorio
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd Sistema-para-Clinicas-de-Psicologia-del-Peru
+```
+
+## 3. Levantar los microservicios
+
+Primero se levantan los servicios de infraestructura, los microservicios de
+negocio y sus bases de datos.
+
+Desde la raíz del proyecto:
+
+```bash
+cd CPPSURContainer
+```
+
+Ejecuta:
+
+```bash
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  -f compose.billing.yaml \
+  -f compose.clinical.yaml \
+  -f compose.queue.yaml \
+  up -d --build
+```
+
+Este comando levanta:
+
+- Config Server.
+- Eureka Server.
+- API Gateway.
+- Patient Service.
+- Scheduling Service.
+- Billing Service.
+- Clinical Service.
+- Queue Service.
+- Bases de datos MySQL, PostgreSQL y SQL Server usadas por los microservicios.
+
+## 4. Levantar frontend, backend de autenticación y base de identidad
+
+Abre otra terminal o vuelve a la raíz del proyecto:
+
+```bash
+cd ..
+```
+
+Desde la raíz ejecuta:
+
+```bash
+docker compose up -d --build
+```
+
+Este comando levanta:
+
+- Backend principal de autenticación y usuarios.
+- Base de datos de identidad.
+- Frontend Angular servido con Nginx.
+
+## 5. Verificar que los contenedores estén activos
+
+Ejecuta:
+
+```bash
+docker ps
+```
+
+Debes ver contenedores relacionados con:
+
+- Config Server.
+- Eureka.
+- Gateway.
+- Patient.
+- Scheduling.
+- Billing.
+- Clinical.
+- Queue.
+- Backend.
+- Frontend.
+- Bases de datos.
+
+Si algún contenedor aún no aparece listo, espera uno o dos minutos y vuelve a
+ejecutar:
+
+```bash
+docker ps
+```
+
+## 6. Verificar Eureka
+
+Abre en el navegador:
 
 ```text
-.
-├── backend/      # API REST Spring Boot 3 / Java 17
-├── frontend/     # Angular
-├── database/     # Script PostgreSQL para Neon
-└── Figma/        # Diseno original
+http://localhost:8761
 ```
 
-## Stack Actual
+En Eureka deben aparecer registrados los microservicios, por ejemplo:
 
-- Backend: Java 17, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL driver.
-- Frontend: Angular, Bootstrap, HttpClient con interceptor JWT.
-- Base de datos: PostgreSQL compatible con Neon.
-- API principal: Spring Boot bajo `/api`.
-- PostgREST: si se usa, debe apuntar al mismo esquema PostgreSQL definido en `database/init.sql`.
+- CPP-API-GATEWAY.
+- CPP-PATIENT-SERVICE.
+- CPP-SCHEDULING-SERVICE.
+- CPP-BILLING-SERVICE.
+- CPP-CLINICAL-SERVICE.
+- CPP-QUEUE-SERVICE.
 
-## Base de Datos PostgreSQL / Neon
+## 7. Verificar el API Gateway
 
-El esquema oficial esta en:
+Ejecuta:
 
 ```bash
-database/init.sql
+curl http://localhost:8086/actuator/health
 ```
 
-El script usa nombres en minuscula, que coinciden con las entidades JPA:
+Debe responder algo similar a:
+
+```json
+{"status":"UP"}
+```
+
+Si entras directamente a:
 
 ```text
-rol
-usuario
-especialidad
-psicologo
-horariopsicologo
-paciente
-ticket
-cita
-deuda
-comprobantepago
-procesoterapeutico
-sesion
+http://localhost:8086/
 ```
 
-Para cargarlo en Neon con `psql`:
+puede aparecer una página `404`. Eso es normal, porque el Gateway no tiene una
+pantalla principal; funciona mediante rutas `/api/...`.
 
-```bash
-psql "postgresql://USUARIO:PASSWORD@HOST/DB?sslmode=require" -f database/init.sql
-```
+## 8. Probar endpoints de microservicios
 
-Si ya tienes variables en `.env`, deben existir estas claves:
-
-```env
-DB_HOST=
-DB_PORT=5432
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-JWT_SECRET=
-INTERNAL_API_KEY=
-MAIL_USERNAME=
-MAIL_PASSWORD=
-```
-
-## Desarrollo Local
-
-Backend:
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-En Windows:
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Angular usa `/api` y el proxy de desarrollo envia esas llamadas a `http://localhost:8080`.
-El backend principal conserva unicamente identidad (autenticacion, perfil y usuarios
-administrativos) y funciona como fachada JWT. Los dominios de pacientes, citas,
-pagos, proceso clinico y cola se ejecutan y persisten exclusivamente en sus
-microservicios. Las API de negocio heredadas del backend estan deshabilitadas.
-
-Para ejecutar el sistema se debe levantar primero la plataforma de microservicios
-desde `CPPSURContainer`:
-
-```bash
-docker compose -f compose.infrastructure.yaml -f compose.patient.yaml -f compose.scheduling.yaml -f compose.billing.yaml -f compose.clinical.yaml -f compose.queue.yaml up --build -d --wait
-```
-
-Luego, desde la raiz del repositorio, se levanta la fachada de identidad y Angular:
-
-```bash
-docker compose up --build -d --wait
-```
-
-El Gateway de microservicios queda en `http://localhost:8086`, la fachada JWT en
-`http://localhost:8080` y la aplicacion en `http://localhost:4200`.
-
-La aplicación completa también puede ejecutarse en Kubernetes local con Kind.
-Desde `CPPSURContainer`:
-
-```bash
-./scripts/kind-deploy.sh
-./scripts/kind-verify.sh
-```
-
-En este modo Angular queda en `http://localhost:4200`. Todas sus llamadas
-`/api/**` pasan primero por la fachada JWT, que aplica las reglas de rol y
-reenvía internamente los dominios de negocio. El Gateway continúa disponible en
-`http://localhost:8086` para comprobaciones técnicas de la infraestructura.
-
-Para la ruta mínima en nube se usa Azure/AKS con servicios `LoadBalancer`.
-Desde `CPPSURContainer`, primero se publican las imágenes propias en Azure
-Container Registry y luego se aplica el overlay Kubernetes de nube:
-
-```bash
-export AZURE_RESOURCE_GROUP=rg-cpp-microservices
-export AKS_NAME=aks-cpp-microservices
-export ACR_NAME=cppregistry
-export ACR_LOGIN_SERVER=cppregistry.azurecr.io
-export CONFIRM_AZURE_COSTS=true
-./scripts/azure-create-resources.sh
-./scripts/azure-build-push.sh
-./scripts/azure-deploy-minimal.sh
-./scripts/azure-verify-minimal.sh
-```
-
-Esta ruta mantiene las bases de datos dentro del clúster AKS y expone solo el
-frontend y el Gateway. Las URLs públicas generadas por
-`azure-verify-minimal.sh` son las que se documentan en el informe.
-
-## Usuarios Demo
-
-Password demo: `123`
-
-| Usuario     | Rol        | Ruta        |
-|-------------|------------|-------------|
-| admin       | ADMIN      | /admin      |
-| recepcion   | RECEPCION  | /recepcion  |
-| caja        | CAJA       | /caja       |
-| psicologo   | PSICOLOGO  | /psicologia |
-| anfitriona  | ANFITRIONA | /anfitriona |
-
-## Endpoints Principales
-
-Auth:
+Puedes probar estas rutas desde el navegador o con `curl`:
 
 ```text
-POST /api/auth/login
-GET  /api/auth/me
-PUT  /api/auth/me
-POST /api/auth/recuperar
-POST /api/auth/recuperar/verificar
+http://localhost:8086/api/patients/search?q=87654321
 ```
-
-Anfitriona:
 
 ```text
-POST /api/anfitriona/tickets/emitir
-GET  /api/anfitriona/tickets/hoy
+http://localhost:8086/api/scheduling/specialties
 ```
-
-Recepcion:
 
 ```text
-GET   /api/recepcion/tickets
-GET   /api/recepcion/tickets/actual
-PATCH /api/recepcion/tickets/{id}/llamar
-PATCH /api/recepcion/tickets/{id}/finalizar
-GET   /api/recepcion/pacientes/buscar?q=
-GET   /api/recepcion/pacientes/dni/{dni}
-POST  /api/recepcion/pacientes
-GET   /api/recepcion/especialidades
-GET   /api/recepcion/psicologos
-GET   /api/recepcion/psicologos/{id}/horario-disponible
-POST  /api/recepcion/citas
+http://localhost:8086/api/billing/debts
 ```
-
-Caja:
 
 ```text
-GET  /api/caja/deudas/buscar
-POST /api/caja/pagar/{deudaId}
-GET  /api/caja/comprobantes/{id}
+http://localhost:8086/api/clinical/diagnoses/cie10?q=
 ```
-
-Psicologia:
 
 ```text
-GET   /api/psicologia/agenda
-PATCH /api/psicologia/citas/{id}/estado
-GET   /api/psicologia/pacientes/{id}/proceso
-POST  /api/psicologia/pacientes/{id}/proceso
-PATCH /api/psicologia/procesos/{id}/fase
-PATCH /api/psicologia/procesos/{id}/alta
-POST  /api/psicologia/sesiones
-GET   /api/psicologia/sesiones/proceso/{procesoId}
+http://localhost:8086/api/queue/public/display
 ```
 
-## Verificacion
+## 9. Abrir el frontend
 
-Backend:
+Abre en el navegador:
+
+```text
+http://localhost:4200
+```
+
+## 10. Usuarios de prueba
+
+Contraseña para los usuarios de prueba:
+
+```text
+123
+```
+
+Usuarios disponibles:
+
+| Usuario | Rol |
+|---|---|
+| `admin` | ADMIN |
+| `recepcion` | RECEPCION |
+| `caja` | CAJA |
+| `psicologo` | PSICOLOGO |
+| `psicologo2` | PSICOLOGO |
+| `anfitriona` | ANFITRIONA |
+| `enfermera` | ENFERMERA |
+
+## 11. Apagar el proyecto
+
+Primero apaga los servicios de la raíz del proyecto:
 
 ```bash
-cd backend
-./mvnw test
+docker compose down
 ```
 
-Frontend:
+Luego entra a la carpeta de microservicios:
 
 ```bash
-cd frontend
-npm run build
+cd CPPSURContainer
 ```
 
-Nota: el build frontend puede requerir ajustar budgets de Angular si los estilos/fuentes superan el limite configurado.
+Y apaga los microservicios:
+
+```bash
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  -f compose.billing.yaml \
+  -f compose.clinical.yaml \
+  -f compose.queue.yaml \
+  down
+```
+
+## 12. Reiniciar el proyecto
+
+Si ya apagaste el proyecto y quieres levantarlo otra vez, repite estos pasos:
+
+```bash
+cd CPPSURContainer
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  -f compose.billing.yaml \
+  -f compose.clinical.yaml \
+  -f compose.queue.yaml \
+  up -d --build
+```
+
+Luego:
+
+```bash
+cd ..
+docker compose up -d --build
+```
+
+Finalmente abre:
+
+```text
+http://localhost:4200
+```
