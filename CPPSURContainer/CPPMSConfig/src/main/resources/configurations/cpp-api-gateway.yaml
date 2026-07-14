@@ -33,10 +33,6 @@ spring:
                   - Content-Type
                 maxAge: 3600
           routes:
-            - id: identity-service
-              uri: lb://cpp-identity-service
-              predicates:
-                - Path=/api/identity/**
             - id: patient-service
               uri: lb://cpp-patient-service
               predicates:

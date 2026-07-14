@@ -68,7 +68,7 @@ patient_response="$(curl --fail-with-body --silent --show-error \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{
-    "dni": "76543210",
+    "dni": "87654321",
     "nombres": "Ana",
     "apellidos": "Torres",
     "fechaNacimiento": "1994-03-15",
@@ -109,7 +109,7 @@ debt_id="$(jq --raw-output '.id' <<<"$debt_response")"
 
 jq --exit-status \
   '.estado == "PENDIENTE" and .pacienteNombre == "Ana Torres" and
-   .pacienteHc == "HC-0001" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
+   .pacienteHc == "HC-0003" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
   <<<"$debt_response" >/dev/null
 
 printf '4/5 Registrando pago y actualizando Agenda...\n'

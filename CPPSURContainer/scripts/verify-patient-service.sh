@@ -60,7 +60,7 @@ patient_result="$(curl --silent --show-error \
   --header 'Content-Type: application/json' \
   --write-out $'\n%{http_code}' \
   --data '{
-    "dni": "76543210",
+    "dni": "87654321",
     "nombres": "Ana",
     "apellidos": "Torres",
     "fechaNacimiento": "1994-03-15",
@@ -81,11 +81,11 @@ if [[ "$patient_status" != "201" ]]; then
 fi
 
 jq --exit-status \
-  '.dni == "76543210" and .numeroHistoria == "HC-0001" and .nombreCompleto == "Ana Torres"' \
+  '.dni == "87654321" and .numeroHistoria == "HC-0003" and .nombreCompleto == "Ana Torres"' \
   <<<"$patient_response" >/dev/null
 
-curl --fail --silent http://localhost:8086/api/patients/dni/76543210 \
-  | jq --exit-status '.dni == "76543210" and .numeroHistoria == "HC-0001"' >/dev/null
+curl --fail --silent http://localhost:8086/api/patients/dni/87654321 \
+  | jq --exit-status '.dni == "87654321" and .numeroHistoria == "HC-0003"' >/dev/null
 
 docker compose "${COMPOSE_ARGS[@]}" ps
 printf 'Microservicio de pacientes y MySQL verificados correctamente.\n'

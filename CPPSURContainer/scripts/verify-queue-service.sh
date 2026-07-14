@@ -9,6 +9,8 @@ trap cleanup EXIT INT TERM
 stage="levantar infraestructura y cola"; docker compose "${COMPOSE_ARGS[@]}" up --build --detach --wait --wait-timeout 420 || fail "servicios no saludables"
 stage="comprobar Config"; curl -fsS http://localhost:8888/cpp-queue-service/default | jq -e '.name=="cpp-queue-service"' >/dev/null || fail "configuración ausente"
 stage="comprobar Eureka"; registered=false; for _ in {1..30}; do if curl -fsS -H 'Accept: application/json' http://localhost:8761/eureka/apps/CPP-QUEUE-SERVICE | jq -e '.application.name=="CPP-QUEUE-SERVICE"' >/dev/null 2>&1; then registered=true; break; fi; sleep 2; done; [[ "$registered" == true ]] || fail "servicio no registrado"
+# Eureka registra Cola antes de que el Gateway necesariamente refresque su catálogo.
+stage="esperar ruta de Cola en el Gateway"; gateway_ready=false; for _ in {1..40}; do status="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8086/api/queue/public/display)"; if [[ "$status" == "200" ]]; then gateway_ready=true; break; fi; sleep 2; done; [[ "$gateway_ready" == true ]] || fail "Gateway no encontró una instancia de Cola"
 stage="emitir tres tickets concurrentemente"; pids=(); for n in 1 2 3; do (curl -fsS -X POST http://localhost:8086/api/queue/tickets >"$TMP_DIR/ticket-$n.json") & pids+=("$!"); done; for pid in "${pids[@]}"; do wait "$pid" || fail "emisión concurrente falló"; done
 numbers="$(jq -r .number "$TMP_DIR"/ticket-*.json | sort | paste -sd, -)"; [[ "$numbers" == "A-001,A-002,A-003" ]] || fail "numeración obtenida: $numbers"
 first_id="$(jq -r 'select(.number=="A-001")|.id' "$TMP_DIR"/ticket-*.json)"; second_id="$(jq -r 'select(.number=="A-002")|.id' "$TMP_DIR"/ticket-*.json)"

@@ -1,9 +1,9 @@
 package pe.com.cpp.queue.service;
 import static org.junit.jupiter.api.Assertions.*; import static org.mockito.Mockito.*;
-import java.time.*; import java.util.*; import org.junit.jupiter.api.*; import org.mockito.*; import org.springframework.test.util.ReflectionTestUtils; import pe.com.cpp.queue.api.*; import pe.com.cpp.queue.domain.*; import pe.com.cpp.queue.exception.*; import pe.com.cpp.queue.repository.*;
+import java.time.*; import java.util.*; import java.util.concurrent.atomic.AtomicInteger; import org.junit.jupiter.api.*; import org.mockito.*; import org.springframework.test.util.ReflectionTestUtils; import pe.com.cpp.queue.api.*; import pe.com.cpp.queue.domain.*; import pe.com.cpp.queue.exception.*; import pe.com.cpp.queue.repository.*;
 class QueueServiceTest {
  @Mock QueueTicketRepository tickets; @Mock DailyTicketSequenceRepository sequences; Clock clock; QueueService service; DailyTicketSequence sequence;
- @BeforeEach void setUp(){MockitoAnnotations.openMocks(this);clock=Clock.fixed(Instant.parse("2026-07-13T04:30:00Z"),ZoneId.of("America/Lima"));service=new QueueService(tickets,sequences,clock);sequence=new DailyTicketSequence(LocalDate.of(2026,7,12));when(sequences.findByDateForUpdate(any())).thenReturn(Optional.of(sequence));when(tickets.saveAndFlush(any())).thenAnswer(i->i.getArgument(0));when(tickets.save(any())).thenAnswer(i->i.getArgument(0));}
+ @BeforeEach void setUp(){MockitoAnnotations.openMocks(this);clock=Clock.fixed(Instant.parse("2026-07-13T04:30:00Z"),ZoneId.of("America/Lima"));service=new QueueService(tickets,sequences,clock);sequence=new DailyTicketSequence(LocalDate.of(2026,7,12));AtomicInteger next=new AtomicInteger(1);when(sequences.allocateNext(any())).thenAnswer(i->next.getAndIncrement());when(sequences.findByDateForUpdate(any())).thenReturn(Optional.of(sequence));when(tickets.saveAndFlush(any())).thenAnswer(i->i.getArgument(0));when(tickets.save(any())).thenAnswer(i->i.getArgument(0));}
  private QueueTicket ticket(long id,String number){QueueTicket t=new QueueTicket(number,LocalDate.of(2026,7,12),LocalDateTime.of(2026,7,12,23,30));ReflectionTestUtils.setField(t,"id",id);return t;}
  @Test void firstTicketOfDay(){assertEquals("A-001",service.issue().number());}
  @Test void incrementsCorrelatively(){service.issue();assertEquals("A-002",service.issue().number());}

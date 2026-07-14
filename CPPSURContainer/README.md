@@ -36,8 +36,13 @@ Comprobaciones:
 ```text
 http://localhost:8888/cpp-api-gateway/default
 http://localhost:8761
-http://localhost:8080/actuator/health
+http://localhost:8080/actuator/health  (Gateway ejecutado manualmente)
+http://localhost:8086/actuator/health  (Gateway publicado por Docker Compose)
 ```
+
+El Gateway escucha internamente en `8080`. Docker Compose publica ese puerto
+como `127.0.0.1:8086` para que pueda convivir con el backend monolitico, que
+continua escuchando en `8080` mientras funciona como fachada JWT.
 
 Despues de ejecutar `mvn clean verify`, la integracion de los tres procesos se
 puede validar con:
@@ -49,6 +54,20 @@ puede validar con:
 El Config Server usa temporalmente un repositorio `native` incluido en su
 classpath. Esta opcion mantiene el primer entorno reproducible; posteriormente
 puede sustituirse por un repositorio Git.
+
+## Identidad durante la migracion
+
+Identidad todavia no es un microservicio independiente. La autenticacion, el
+perfil y la administracion de usuarios permanecen en el backend principal bajo
+`/api/auth/**` y `/api/admin/**`, accesible localmente por el puerto `8080`.
+Por este motivo el Gateway no declara una ruta `cpp-identity-service`: ese
+servicio no existe y mantener la ruta produciria una respuesta `503`.
+
+El Gateway Docker, publicado en `8086`, enruta exclusivamente los cinco
+dominios ya extraidos: Pacientes, Agenda, Facturacion, Clinico y Turnos. Cuando
+se ejecuta el sistema completo, Angular consume la fachada JWT en `8080` y esta
+reenvia las operaciones de negocio a los microservicios usando la clave interna
+de desarrollo.
 
 ## Docker
 
