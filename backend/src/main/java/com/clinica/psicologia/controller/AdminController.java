@@ -14,11 +14,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern PASSWORD_LETTER_PATTERN = Pattern.compile("[A-Za-z]");
+    private static final Pattern PASSWORD_NUMBER_PATTERN = Pattern.compile("\\d");
 
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
@@ -67,6 +72,8 @@ public class AdminController {
         String nombreCompleto = normalizarRequerido(request.nombreCompleto(), "nombreCompleto");
         String email = normalizarRequerido(request.email(), "email").toLowerCase();
         String password = normalizarRequerido(request.password(), "password");
+        validarEmail(email);
+        validarPassword(password);
 
         if (usuarioRepo.findByUsername(username).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -99,6 +106,7 @@ public class AdminController {
                     String username = normalizarRequerido(request.username(), "username");
                     String nombreCompleto = normalizarRequerido(request.nombreCompleto(), "nombreCompleto");
                     String email = normalizarRequerido(request.email(), "email").toLowerCase();
+                    validarEmail(email);
 
                     usuarioRepo.findByUsername(username)
                             .filter(existente -> !existente.getId().equals(id))
@@ -122,7 +130,9 @@ public class AdminController {
                     usuario.setActivo(nuevoActivo);
 
                     if (request.password() != null && !request.password().isBlank()) {
-                        usuario.setPasswordHash(passwordEncoder.encode(request.password().trim()));
+                        String password = request.password().trim();
+                        validarPassword(password);
+                        usuario.setPasswordHash(passwordEncoder.encode(password));
                     }
 
                     return ResponseEntity.ok(toUsuarioDTO(usuarioRepo.save(usuario)));
@@ -166,6 +176,21 @@ public class AdminController {
             throw new IllegalArgumentException("El campo " + campo + " es requerido");
         }
         return valor.trim();
+    }
+
+    private void validarEmail(String email) {
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Ingrese un correo electrónico válido");
+        }
+    }
+
+    private void validarPassword(String password) {
+        if (password.length() < 8
+                || !PASSWORD_LETTER_PATTERN.matcher(password).find()
+                || !PASSWORD_NUMBER_PATTERN.matcher(password).find()) {
+            throw new IllegalArgumentException(
+                    "La contraseña debe tener al menos 8 caracteres, una letra y un número");
+        }
     }
 
     private void validarNoDesactivarUltimoAdmin(Usuario usuario, Rol rolNuevo, boolean activoNuevo) {

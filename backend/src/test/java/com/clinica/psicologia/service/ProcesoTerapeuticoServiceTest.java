@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -110,5 +111,31 @@ class ProcesoTerapeuticoServiceTest {
 
         verify(procesoRepository, never()).save(any(ProcesoTerapeutico.class));
         verify(sesionRepository, never()).save(any(Sesion.class));
+    }
+
+    @Test
+    void cerrarPorAltaBloqueaElProcesoMonolitico() {
+        Paciente paciente = Paciente.builder().id(1).build();
+        Psicologo psicologo = Psicologo.builder().id(2).build();
+        ProcesoTerapeutico proceso = ProcesoTerapeutico.builder()
+                .id(20).paciente(paciente).psicologo(psicologo).activo(true).build();
+        when(procesoRepository.findById(20)).thenReturn(Optional.of(proceso));
+        when(procesoRepository.save(proceso)).thenReturn(proceso);
+
+        ProcesoTerapeuticoDTO response = service.cerrarPorAlta(20);
+
+        assertThat(response.getActivo()).isFalse();
+        assertThat(proceso.getFechaFin()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void procesoCerradoNoPermiteCambiarFase() {
+        ProcesoTerapeutico proceso = ProcesoTerapeutico.builder().id(20).activo(false).build();
+        when(procesoRepository.findById(20)).thenReturn(Optional.of(proceso));
+
+        assertThatThrownBy(() -> service.actualizarFase(20, 3, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cerrada");
+        verify(procesoRepository, never()).save(any(ProcesoTerapeutico.class));
     }
 }

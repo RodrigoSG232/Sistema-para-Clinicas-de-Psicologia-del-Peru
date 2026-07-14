@@ -42,7 +42,7 @@ fi
 gateway_ready=false
 for _ in {1..30}; do
   gateway_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-    http://localhost:8080/api/patients/0)"
+    http://localhost:8086/api/patients/0)"
   if [[ "$gateway_status" == "404" ]]; then
     gateway_ready=true
     break
@@ -69,7 +69,7 @@ patient_result="$(curl --silent --show-error \
     "email": "ana.torres@example.com",
     "direccion": "Lima"
   }' \
-  http://localhost:8080/api/patients)"
+  http://localhost:8086/api/patients)"
 
 patient_status="${patient_result##*$'\n'}"
 patient_response="${patient_result%$'\n'*}"
@@ -84,7 +84,7 @@ jq --exit-status \
   '.dni == "76543210" and .numeroHistoria == "HC-0001" and .nombreCompleto == "Ana Torres"' \
   <<<"$patient_response" >/dev/null
 
-curl --fail --silent http://localhost:8080/api/patients/dni/76543210 \
+curl --fail --silent http://localhost:8086/api/patients/dni/76543210 \
   | jq --exit-status '.dni == "76543210" and .numeroHistoria == "HC-0001"' >/dev/null
 
 docker compose "${COMPOSE_ARGS[@]}" ps

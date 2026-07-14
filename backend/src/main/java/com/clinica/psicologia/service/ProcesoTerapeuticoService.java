@@ -89,6 +89,9 @@ public class ProcesoTerapeuticoService {
 
         ProcesoTerapeutico proceso = procesoRepo.findById(procesoId)
                 .orElseThrow(() -> new NoSuchElementException("Proceso terapéutico no encontrado"));
+        if (!Boolean.TRUE.equals(proceso.getActivo())) {
+            throw new IllegalStateException("La historia clínica está cerrada por alta");
+        }
 
         proceso.setFaseActual(nuevaFase);
         if (observaciones != null) {
@@ -98,6 +101,19 @@ public class ProcesoTerapeuticoService {
 
         EntrevistaInicial entrevista = entrevistaRepo.findByProcesoTerapeuticoId(guardado.getId()).orElse(null);
         return toDto(guardado, entrevista);
+    }
+
+    @Transactional
+    public ProcesoTerapeuticoDTO cerrarPorAlta(Integer procesoId) {
+        ProcesoTerapeutico proceso = procesoRepo.findById(procesoId)
+                .orElseThrow(() -> new NoSuchElementException("Proceso terapéutico no encontrado"));
+        if (Boolean.TRUE.equals(proceso.getActivo())) {
+            proceso.setActivo(false);
+            proceso.setFechaFin(java.time.LocalDate.now());
+            proceso = procesoRepo.save(proceso);
+        }
+        EntrevistaInicial entrevista = entrevistaRepo.findByProcesoTerapeuticoId(proceso.getId()).orElse(null);
+        return toDto(proceso, entrevista);
     }
 
     private ProcesoTerapeuticoDTO toDto(ProcesoTerapeutico p, EntrevistaInicial entrevista) {

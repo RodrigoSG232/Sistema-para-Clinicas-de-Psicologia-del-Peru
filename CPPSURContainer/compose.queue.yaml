@@ -1,0 +1,51 @@
+services:
+  queue-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: cpp_queue
+      MYSQL_USER: cpp_queue
+      MYSQL_PASSWORD: cpp_queue_dev
+      MYSQL_ROOT_PASSWORD: root_queue_dev
+      TZ: America/Lima
+    ports: ["3308:3306"]
+    volumes: [queue-db-data:/var/lib/mysql]
+    networks: [cpp-network]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    mem_limit: 512m
+    restart: unless-stopped
+  queue-service:
+    image: cpp/queue-service:0.1.0
+    build:
+      context: .
+      dockerfile: CPPMSQueue/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      QUEUE_DB_URL: jdbc:mysql://queue-db:3306/cpp_queue?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
+      QUEUE_DB_USER: cpp_queue
+      QUEUE_DB_PASSWORD: cpp_queue_dev
+      INTERNAL_API_KEY: cpp-internal-dev-key
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports: ["8085:8085"]
+    networks: [cpp-network]
+    depends_on:
+      config-server: {condition: service_healthy}
+      eureka-server: {condition: service_healthy}
+      queue-db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD","wget","--spider","--quiet","http://localhost:8085/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 25s
+    mem_limit: 512m
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+volumes:
+  queue-db-data:

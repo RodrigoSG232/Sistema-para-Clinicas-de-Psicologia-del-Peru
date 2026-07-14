@@ -5,7 +5,7 @@ microservicios. El primer bloque implementa los servicios de infraestructura:
 
 - `CPPMSConfig`: configuracion centralizada, puerto `8888`.
 - `CPPMSEureka`: registro y descubrimiento, puerto `8761`.
-- `CPPMSGateway`: puerta de entrada HTTP, puerto `8080`.
+- `CPPMSGateway`: puerta de entrada HTTP, puerto interno `8080` y puerto local `8086`.
 
 ## Versiones base
 
@@ -95,7 +95,7 @@ docker compose \
 
 MySQL queda disponible en el puerto local `3307` y el servicio en `8081`,
 aunque las solicitudes de negocio deben entrar por Gateway en el puerto
-`8080`.
+local `8086`.
 
 La verificacion integral crea un entorno temporal, comprueba Config Server,
 el registro en Eureka, la ruta de Gateway y la persistencia en MySQL:
@@ -166,3 +166,32 @@ comprueba que Agenda reciba el estado `PAGADA`:
 SQL Server necesita mas memoria que MySQL y PostgreSQL; para la prueba local
 el contenedor tiene un limite de 2 GB. Las credenciales de Compose son solo
 para desarrollo y deben convertirse en secretos al desplegar Kubernetes.
+
+## Cuarto microservicio de negocio: clinico
+
+`CPPMSClinical` administra procesos terapeuticos, entrevistas iniciales y
+sesiones inmutables en una base PostgreSQL exclusiva. Conserva identificadores
+y snapshots, valida pacientes y citas mediante Eureka y solicita a Agenda el
+cambio `EN_CONSULTA` a `ATENDIDA` tras registrar una sesion.
+
+Se publica bajo `/api/clinical/**`, usa el puerto `8084` y PostgreSQL se expone
+localmente en `5434`. La verificacion integral se ejecuta con:
+
+```bash
+./scripts/verify-clinical-service.sh
+```
+
+## Quinto microservicio de negocio: turnos y tickets
+
+`CPPMSQueue` administra la emisión diaria y la cola de atención en una base
+MySQL exclusiva. Una fila de secuencia por fecha se bloquea durante la emisión
+y las transiciones, garantizando correlativos únicos y un solo ticket en
+atención aun con solicitudes concurrentes.
+
+La API se publica bajo `/api/queue/**`, el servicio usa `8085` y MySQL se
+expone localmente en `3308`. La primera entrega usa REST como fuente de verdad;
+las notificaciones WebSocket quedan previstas para un cambio posterior.
+
+```bash
+./scripts/verify-queue-service.sh
+```

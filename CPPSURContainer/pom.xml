@@ -55,5 +55,7 @@
         <module>CPPMSPatient</module>
         <module>CPPMSScheduling</module>
         <module>CPPMSBilling</module>
+        <module>CPPMSClinical</module>
+        <module>CPPMSQueue</module>
     </modules>
 </project>

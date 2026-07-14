@@ -1,0 +1,16 @@
+package pe.com.cpp.queue.api;
+import static org.mockito.Mockito.*; import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*; import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import java.time.*; import java.util.*; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest; import org.springframework.test.context.bean.override.mockito.MockitoBean; import org.springframework.test.web.servlet.MockMvc; import pe.com.cpp.queue.domain.TicketStatus; import pe.com.cpp.queue.exception.*; import pe.com.cpp.queue.service.QueueService;
+@WebMvcTest(QueueController.class) class QueueControllerTest {
+ private static final String API_KEY="cpp-internal-dev-key";
+ @Autowired MockMvc mvc; @MockitoBean QueueService service;
+ private TicketResponse ticket(){return new TicketResponse(1L,"A-001",LocalDate.of(2026,7,12),TicketStatus.ESPERA,LocalDateTime.now(),null,null,10,1);}
+ @Test void issueReturns201() throws Exception{when(service.issue()).thenReturn(ticket());mvc.perform(post("/api/queue/tickets").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isCreated()).andExpect(jsonPath("$.number").value("A-001"));}
+ @Test void filtersByStatus() throws Exception{when(service.byStatus(TicketStatus.ESPERA)).thenReturn(List.of(ticket()));mvc.perform(get("/api/queue/tickets?status=ESPERA").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("ESPERA"));}
+ @Test void invalidStatusReturns400() throws Exception{mvc.perform(get("/api/queue/tickets?status=OTRO").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isBadRequest());}
+ @Test void missingTicketReturns404() throws Exception{when(service.call(99L)).thenThrow(new ResourceNotFoundException("Ticket no encontrado"));mvc.perform(patch("/api/queue/tickets/99/call").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isNotFound());}
+ @Test void conflictReturns409() throws Exception{when(service.call(2L)).thenThrow(new QueueConflictException("Ya existe un ticket en atención"));mvc.perform(patch("/api/queue/tickets/2/call").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isConflict());}
+ @Test void issuesTicketLinkedToAppointment() throws Exception{when(service.issueForAppointment(10,1)).thenReturn(ticket());mvc.perform(post("/api/queue/tickets/appointments/10?patientId=1").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isCreated()).andExpect(jsonPath("$.appointmentId").value(10));}
+ @Test void findsTicketByAppointment() throws Exception{when(service.byAppointment(10)).thenReturn(ticket());mvc.perform(get("/api/queue/tickets/appointments/10").header("X-Internal-Api-Key",API_KEY)).andExpect(status().isOk()).andExpect(jsonPath("$.patientId").value(1));}
+ @Test void attachesExistingTicketToAppointment() throws Exception{when(service.attach(1L,10,1)).thenReturn(ticket());mvc.perform(patch("/api/queue/tickets/1/appointment").header("X-Internal-Api-Key",API_KEY).contentType("application/json").content("{\"appointmentId\":10,\"patientId\":1}")).andExpect(status().isOk()).andExpect(jsonPath("$.appointmentId").value(10));}
+}

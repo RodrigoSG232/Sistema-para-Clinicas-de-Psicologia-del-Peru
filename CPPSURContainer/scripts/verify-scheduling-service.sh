@@ -43,7 +43,7 @@ fi
 gateway_ready=false
 for _ in {1..30}; do
   gateway_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-    http://localhost:8080/api/scheduling/specialties)"
+    http://localhost:8086/api/scheduling/specialties)"
   if [[ "$gateway_status" == "200" ]]; then
     gateway_ready=true
     break
@@ -69,13 +69,13 @@ patient_response="$(curl --fail --silent --show-error \
     "email": "ana.torres@example.com",
     "direccion": "Lima"
   }' \
-  http://localhost:8080/api/patients)"
+  http://localhost:8086/api/patients)"
 
 patient_id="$(jq --raw-output '.id' <<<"$patient_response")"
-specialty_id="$(curl --fail --silent http://localhost:8080/api/scheduling/specialties \
+specialty_id="$(curl --fail --silent http://localhost:8086/api/scheduling/specialties \
   | jq --raw-output '.[] | select(.nombre == "Psicologia Clinica") | .id')"
 psychologist_id="$(curl --fail --silent \
-  "http://localhost:8080/api/scheduling/psychologists?specialtyId=$specialty_id" \
+  "http://localhost:8086/api/scheduling/psychologists?specialtyId=$specialty_id" \
   | jq --raw-output '.[0].id')"
 
 appointment_payload="$(jq --null-input \
@@ -90,7 +90,7 @@ appointment_result="$(curl --silent --show-error \
   --header 'Content-Type: application/json' \
   --write-out $'\n%{http_code}' \
   --data "$appointment_payload" \
-  http://localhost:8080/api/scheduling/appointments)"
+  http://localhost:8086/api/scheduling/appointments)"
 appointment_status="${appointment_result##*$'\n'}"
 appointment_response="${appointment_result%$'\n'*}"
 
@@ -108,14 +108,14 @@ duplicate_status="$(curl --silent --output /dev/null --write-out '%{http_code}' 
   --request POST \
   --header 'Content-Type: application/json' \
   --data "$appointment_payload" \
-  http://localhost:8080/api/scheduling/appointments)"
+  http://localhost:8086/api/scheduling/appointments)"
 
 if [[ "$duplicate_status" != "409" ]]; then
   printf 'La reserva duplicada debía devolver HTTP 409, pero devolvió %s.\n' "$duplicate_status" >&2
   exit 1
 fi
 
-curl --fail --silent "http://localhost:8080/api/scheduling/appointments/patient/$patient_id" \
+curl --fail --silent "http://localhost:8086/api/scheduling/appointments/patient/$patient_id" \
   | jq --exit-status 'length == 1 and .[0].estado == "PENDIENTE_PAGO"' >/dev/null
 
 docker compose "${COMPOSE_ARGS[@]}" ps

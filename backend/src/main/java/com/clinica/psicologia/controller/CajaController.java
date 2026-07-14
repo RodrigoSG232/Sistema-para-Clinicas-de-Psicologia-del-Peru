@@ -15,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/caja")
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "legacy.business-api.enabled", havingValue = "true")
 public class CajaController {
 
     private final DeudaRepository deudaRepo;

@@ -1,0 +1,6 @@
+package pe.com.cpp.clinical.api;
+import static org.mockito.Mockito.*; import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*; import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*; import java.time.*; import java.util.*; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest; import org.springframework.test.context.bean.override.mockito.MockitoBean; import org.springframework.test.web.servlet.MockMvc; import pe.com.cpp.clinical.service.ProductivityService;
+@WebMvcTest(ProductivityController.class) class ProductivityControllerTest {
+ @Autowired MockMvc mvc; @MockitoBean ProductivityService service;
+ @Test void returnsProductivityDashboard() throws Exception{ProductivityReportResponse response=new ProductivityReportResponse(LocalDate.of(2026,7,1),LocalDate.of(2026,7,13),2,36,24,48,List.of(new ProductivityTrendResponse(LocalDate.of(2026,7,13),2,36)),List.of(),List.of());when(service.report(LocalDate.of(2026,7,1),LocalDate.of(2026,7,13))).thenReturn(response);mvc.perform(get("/api/clinical/productivity?from=2026-07-01&to=2026-07-13")).andExpect(status().isOk()).andExpect(jsonPath("$.averageHours").value(36)).andExpect(jsonPath("$.dailyTrend[0].discharges").value(2));}
+}

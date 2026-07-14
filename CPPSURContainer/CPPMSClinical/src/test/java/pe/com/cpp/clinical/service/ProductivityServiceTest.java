@@ -1,0 +1,10 @@
+package pe.com.cpp.clinical.service;
+import static org.junit.jupiter.api.Assertions.*; import static org.mockito.Mockito.*; import java.time.*; import java.util.*; import org.junit.jupiter.api.*; import org.mockito.*; import pe.com.cpp.clinical.api.*; import pe.com.cpp.clinical.exception.BusinessRuleException; import pe.com.cpp.clinical.repository.*;
+class ProductivityServiceTest {
+ @Mock ClinicalDischargeReportRepository reports; ProductivityService service;
+ @BeforeEach void setUp(){MockitoAnnotations.openMocks(this);service=new ProductivityService(reports,Clock.fixed(Instant.parse("2026-07-13T15:00:00Z"),ZoneOffset.UTC));}
+ private ProductivityCaseProjection metric(int id,String psychologist,LocalDateTime discharge,double hours){ProductivityCaseProjection p=mock(ProductivityCaseProjection.class);when(p.getReportId()).thenReturn(id);when(p.getTicketNumber()).thenReturn("A-00"+id);when(p.getPatientName()).thenReturn("Paciente "+id);when(p.getPatientHistoryNumber()).thenReturn("HC-"+id);when(p.getPsychologistName()).thenReturn(psychologist);when(p.getTicketIssuedAt()).thenReturn(discharge.minusMinutes((long)(hours*60)));when(p.getDischargedAt()).thenReturn(discharge);when(p.getEfficiencyHours()).thenReturn(hours);return p;}
+ @Test void calculatesEfficiencyMetrics(){LocalDate from=LocalDate.of(2026,7,1),to=LocalDate.of(2026,7,13);ProductivityCaseProjection first=metric(1,"Dra. Ruiz",LocalDateTime.of(2026,7,10,10,0),24),second=metric(2,"Dra. Ruiz",LocalDateTime.of(2026,7,11,10,0),48);when(reports.findProductivityCases(from,to)).thenReturn(List.of(first,second));ProductivityReportResponse result=service.report(from,to);assertEquals(2,result.totalDischarges());assertEquals(36,result.averageHours());assertEquals(2,result.dailyTrend().size());assertEquals(1,result.byPsychologist().size());}
+ @Test void returnsEmptyDashboard(){ProductivityReportResponse result=service.report(null,null);assertEquals(0,result.totalDischarges());assertEquals(LocalDate.of(2026,6,14),result.fromDate());}
+ @Test void rejectsInvalidPeriod(){assertThrows(BusinessRuleException.class,()->service.report(LocalDate.of(2026,7,14),LocalDate.of(2026,7,13)));}
+}

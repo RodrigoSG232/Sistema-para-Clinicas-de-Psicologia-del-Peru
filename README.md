@@ -60,6 +60,7 @@ DB_NAME=
 DB_USER=
 DB_PASSWORD=
 JWT_SECRET=
+INTERNAL_API_KEY=
 MAIL_USERNAME=
 MAIL_PASSWORD=
 ```
@@ -89,6 +90,26 @@ npm start
 ```
 
 Angular usa `/api` y el proxy de desarrollo envia esas llamadas a `http://localhost:8080`.
+El backend principal conserva unicamente identidad (autenticacion, perfil y usuarios
+administrativos) y funciona como fachada JWT. Los dominios de pacientes, citas,
+pagos, proceso clinico y cola se ejecutan y persisten exclusivamente en sus
+microservicios. Las API de negocio heredadas del backend estan deshabilitadas.
+
+Para ejecutar el sistema se debe levantar primero la plataforma de microservicios
+desde `CPPSURContainer`:
+
+```bash
+docker compose -f compose.infrastructure.yaml -f compose.patient.yaml -f compose.scheduling.yaml -f compose.billing.yaml -f compose.clinical.yaml -f compose.queue.yaml up --build -d --wait
+```
+
+Luego, desde la raiz del repositorio, se levanta la fachada de identidad y Angular:
+
+```bash
+docker compose up --build -d --wait
+```
+
+El Gateway de microservicios queda en `http://localhost:8086`, la fachada JWT en
+`http://localhost:8080` y la aplicacion en `http://localhost:4200`.
 
 ## Usuarios Demo
 
@@ -153,6 +174,7 @@ PATCH /api/psicologia/citas/{id}/estado
 GET   /api/psicologia/pacientes/{id}/proceso
 POST  /api/psicologia/pacientes/{id}/proceso
 PATCH /api/psicologia/procesos/{id}/fase
+PATCH /api/psicologia/procesos/{id}/alta
 POST  /api/psicologia/sesiones
 GET   /api/psicologia/sesiones/proceso/{procesoId}
 ```

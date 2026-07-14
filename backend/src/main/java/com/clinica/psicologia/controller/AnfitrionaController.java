@@ -15,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/anfitriona")
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "legacy.business-api.enabled", havingValue = "true")
 public class AnfitrionaController {
 
     private final TicketService ticketService;

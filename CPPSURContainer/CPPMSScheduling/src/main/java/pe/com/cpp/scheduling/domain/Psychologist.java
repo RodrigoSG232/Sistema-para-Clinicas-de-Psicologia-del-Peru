@@ -27,6 +27,9 @@ public class Psychologist {
     @Column(name = "license_number", nullable = false, unique = true, length = 50)
     private String licenseNumber;
 
+    @Column(name = "identity_subject", nullable = false, unique = true, length = 100)
+    private String identitySubject;
+
     @Column(length = 20)
     private String phone;
 
@@ -57,6 +60,10 @@ public class Psychologist {
 
     public String getLicenseNumber() {
         return licenseNumber;
+    }
+
+    public String getIdentitySubject() {
+        return identitySubject;
     }
 
     public Specialty getSpecialty() {

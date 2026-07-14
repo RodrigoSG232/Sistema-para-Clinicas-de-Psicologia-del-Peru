@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.com.cpp.scheduling.api.AppointmentCreateRequest;
 import pe.com.cpp.scheduling.api.AppointmentResponse;
 import pe.com.cpp.scheduling.api.AvailabilityResponse;
+import pe.com.cpp.scheduling.api.PsychologyAgendaResponse;
 import pe.com.cpp.scheduling.api.PsychologistResponse;
 import pe.com.cpp.scheduling.api.SpecialtyResponse;
 import pe.com.cpp.scheduling.client.PatientClient;
@@ -27,6 +28,7 @@ import pe.com.cpp.scheduling.domain.PsychologistSchedule;
 import pe.com.cpp.scheduling.domain.Specialty;
 import pe.com.cpp.scheduling.exception.AppointmentConflictException;
 import pe.com.cpp.scheduling.exception.BusinessRuleException;
+import pe.com.cpp.scheduling.exception.ForbiddenOperationException;
 import pe.com.cpp.scheduling.exception.ResourceNotFoundException;
 import pe.com.cpp.scheduling.repository.AppointmentRepository;
 import pe.com.cpp.scheduling.repository.PsychologistRepository;
@@ -43,6 +45,9 @@ public class SchedulingService {
             AppointmentStatus.PENDING_PAYMENT, EnumSet.of(AppointmentStatus.PAID, AppointmentStatus.CANCELLED),
             AppointmentStatus.PAID, EnumSet.of(AppointmentStatus.ON_FLOOR, AppointmentStatus.CANCELLED),
             AppointmentStatus.ON_FLOOR, EnumSet.of(AppointmentStatus.IN_CONSULTATION, AppointmentStatus.CANCELLED),
+            AppointmentStatus.IN_CONSULTATION, EnumSet.of(AppointmentStatus.ATTENDED));
+    private static final Map<AppointmentStatus, Set<AppointmentStatus>> PSYCHOLOGY_TRANSITIONS = Map.of(
+            AppointmentStatus.ON_FLOOR, EnumSet.of(AppointmentStatus.IN_CONSULTATION),
             AppointmentStatus.IN_CONSULTATION, EnumSet.of(AppointmentStatus.ATTENDED));
 
     private final SpecialtyRepository specialtyRepository;
@@ -150,10 +155,39 @@ public class SchedulingService {
                 .stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public PsychologyAgendaResponse findOwnPsychologyAgenda(String authenticatedUsername,
+            java.time.LocalDate date) {
+        Psychologist psychologist = authenticatedPsychologist(authenticatedUsername);
+        List<AppointmentResponse> appointments = appointmentRepository
+                .findByPsychologistIdAndAppointmentDateOrderByAppointmentTimeAsc(
+                        psychologist.getId(), date)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+        return new PsychologyAgendaResponse(psychologist.getId(), psychologist.getIdentitySubject(),
+                psychologist.getFullName(), date, appointments);
+    }
+
     @Transactional
     public AppointmentResponse changeStatus(Integer appointmentId, String externalStatus) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+        return applyStatusTransition(appointment, externalStatus);
+    }
+
+    @Transactional
+    public AppointmentResponse changeOwnAppointmentStatus(String authenticatedUsername,
+            Integer appointmentId, String externalStatus) {
+        Psychologist psychologist = authenticatedPsychologist(authenticatedUsername);
+        Appointment appointment = appointmentRepository
+                .findByIdAndPsychologistId(appointmentId, psychologist.getId())
+                .orElseThrow(() -> new ForbiddenOperationException(
+                        "La cita no pertenece al psicólogo autenticado"));
+        return applyPsychologyStatusTransition(appointment, externalStatus);
+    }
+
+    private AppointmentResponse applyStatusTransition(Appointment appointment, String externalStatus) {
         AppointmentStatus newStatus = fromExternalStatus(externalStatus);
         if (appointment.getStatus() == newStatus) {
             return toResponse(appointment);
@@ -162,6 +196,23 @@ public class SchedulingService {
         if (!allowed.contains(newStatus)) {
             throw new BusinessRuleException("Transición de estado no permitida: "
                     + toExternalStatus(appointment.getStatus()) + " -> " + externalStatus);
+        }
+        appointment.changeStatus(newStatus);
+        return toResponse(appointmentRepository.save(appointment));
+    }
+
+    private AppointmentResponse applyPsychologyStatusTransition(
+            Appointment appointment, String externalStatus) {
+        AppointmentStatus newStatus = fromExternalStatus(externalStatus);
+        AppointmentStatus currentStatus = appointment.getStatus();
+        if (currentStatus == newStatus) {
+            return toResponse(appointment);
+        }
+        Set<AppointmentStatus> allowed = PSYCHOLOGY_TRANSITIONS
+                .getOrDefault(currentStatus, Set.of());
+        if (!allowed.contains(newStatus)) {
+            throw new BusinessRuleException("Transición de estado no permitida para Psicología: "
+                    + toExternalStatus(currentStatus) + " -> " + externalStatus);
         }
         appointment.changeStatus(newStatus);
         return toResponse(appointmentRepository.save(appointment));
@@ -177,6 +228,20 @@ public class SchedulingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Psicólogo no encontrado"));
         if (!psychologist.isActive()) {
             throw new BusinessRuleException("El psicólogo se encuentra inactivo");
+        }
+        return psychologist;
+    }
+
+    private Psychologist authenticatedPsychologist(String authenticatedUsername) {
+        if (authenticatedUsername == null || authenticatedUsername.isBlank()) {
+            throw new ForbiddenOperationException("No se recibió la identidad autenticada");
+        }
+        Psychologist psychologist = psychologistRepository
+                .findByIdentitySubjectIgnoreCase(authenticatedUsername.trim())
+                .orElseThrow(() -> new ForbiddenOperationException(
+                        "El usuario autenticado no está vinculado a un psicólogo"));
+        if (!psychologist.isActive()) {
+            throw new ForbiddenOperationException("El psicólogo autenticado se encuentra inactivo");
         }
         return psychologist;
     }
