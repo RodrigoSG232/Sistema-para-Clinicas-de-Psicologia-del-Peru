@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +33,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
 
     List<Appointment> findByAppointmentDateBetweenOrderByAppointmentDateAscAppointmentTimeAsc(
             LocalDate start, LocalDate end);
+
+    List<Appointment> findByPsychologistIdAndAppointmentDateOrderByAppointmentTimeAsc(
+            Integer psychologistId, LocalDate appointmentDate);
+
+    Optional<Appointment> findByIdAndPsychologistId(Integer id, Integer psychologistId);
 }

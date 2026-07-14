@@ -60,6 +60,7 @@ DB_NAME=
 DB_USER=
 DB_PASSWORD=
 JWT_SECRET=
+INTERNAL_API_KEY=
 MAIL_USERNAME=
 MAIL_PASSWORD=
 ```
@@ -89,6 +90,59 @@ npm start
 ```
 
 Angular usa `/api` y el proxy de desarrollo envia esas llamadas a `http://localhost:8080`.
+El backend principal conserva unicamente identidad (autenticacion, perfil y usuarios
+administrativos) y funciona como fachada JWT. Los dominios de pacientes, citas,
+pagos, proceso clinico y cola se ejecutan y persisten exclusivamente en sus
+microservicios. Las API de negocio heredadas del backend estan deshabilitadas.
+
+Para ejecutar el sistema se debe levantar primero la plataforma de microservicios
+desde `CPPSURContainer`:
+
+```bash
+docker compose -f compose.infrastructure.yaml -f compose.patient.yaml -f compose.scheduling.yaml -f compose.billing.yaml -f compose.clinical.yaml -f compose.queue.yaml up --build -d --wait
+```
+
+Luego, desde la raiz del repositorio, se levanta la fachada de identidad y Angular:
+
+```bash
+docker compose up --build -d --wait
+```
+
+El Gateway de microservicios queda en `http://localhost:8086`, la fachada JWT en
+`http://localhost:8080` y la aplicacion en `http://localhost:4200`.
+
+La aplicación completa también puede ejecutarse en Kubernetes local con Kind.
+Desde `CPPSURContainer`:
+
+```bash
+./scripts/kind-deploy.sh
+./scripts/kind-verify.sh
+```
+
+En este modo Angular queda en `http://localhost:4200`. Todas sus llamadas
+`/api/**` pasan primero por la fachada JWT, que aplica las reglas de rol y
+reenvía internamente los dominios de negocio. El Gateway continúa disponible en
+`http://localhost:8086` para comprobaciones técnicas de la infraestructura.
+
+Para la ruta mínima en nube se usa Azure/AKS con servicios `LoadBalancer`.
+Desde `CPPSURContainer`, primero se publican las imágenes propias en Azure
+Container Registry y luego se aplica el overlay Kubernetes de nube:
+
+```bash
+export AZURE_RESOURCE_GROUP=rg-cpp-microservices
+export AKS_NAME=aks-cpp-microservices
+export ACR_NAME=cppregistry
+export ACR_LOGIN_SERVER=cppregistry.azurecr.io
+export CONFIRM_AZURE_COSTS=true
+./scripts/azure-create-resources.sh
+./scripts/azure-build-push.sh
+./scripts/azure-deploy-minimal.sh
+./scripts/azure-verify-minimal.sh
+```
+
+Esta ruta mantiene las bases de datos dentro del clúster AKS y expone solo el
+frontend y el Gateway. Las URLs públicas generadas por
+`azure-verify-minimal.sh` son las que se documentan en el informe.
 
 ## Usuarios Demo
 
@@ -153,6 +207,7 @@ PATCH /api/psicologia/citas/{id}/estado
 GET   /api/psicologia/pacientes/{id}/proceso
 POST  /api/psicologia/pacientes/{id}/proceso
 PATCH /api/psicologia/procesos/{id}/fase
+PATCH /api/psicologia/procesos/{id}/alta
 POST  /api/psicologia/sesiones
 GET   /api/psicologia/sesiones/proceso/{procesoId}
 ```

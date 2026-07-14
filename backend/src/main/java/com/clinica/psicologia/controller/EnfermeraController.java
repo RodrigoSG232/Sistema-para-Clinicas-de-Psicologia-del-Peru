@@ -21,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/enfermera")
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "legacy.business-api.enabled", havingValue = "true")
 public class EnfermeraController {
 
     private static final String ESTADO_PAGADA = "PAGADA";

@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import pe.com.cpp.scheduling.config.InternalPsychologyAccessFilter;
 import pe.com.cpp.scheduling.service.SchedulingService;
 
 @RestController
@@ -69,6 +71,24 @@ public class SchedulingController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         return schedulingService.findByDateRange(start, end);
+    }
+
+    @GetMapping("/internal/psychology/agenda")
+    public PsychologyAgendaResponse findOwnPsychologyAgenda(
+            @RequestHeader(InternalPsychologyAccessFilter.AUTHENTICATED_USERNAME_HEADER)
+            String authenticatedUsername,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return schedulingService.findOwnPsychologyAgenda(authenticatedUsername, date);
+    }
+
+    @PatchMapping("/internal/psychology/appointments/{id}/status")
+    public AppointmentResponse changeOwnAppointmentStatus(
+            @RequestHeader(InternalPsychologyAccessFilter.AUTHENTICATED_USERNAME_HEADER)
+            String authenticatedUsername,
+            @PathVariable Integer id,
+            @Valid @RequestBody AppointmentStatusRequest request) {
+        return schedulingService.changeOwnAppointmentStatus(
+                authenticatedUsername, id, request.estado());
     }
 
     @PatchMapping("/appointments/{id}/status")

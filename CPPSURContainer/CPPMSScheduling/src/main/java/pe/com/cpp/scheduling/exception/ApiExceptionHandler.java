@@ -32,6 +32,11 @@ public class ApiExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
     }
 
+    @ExceptionHandler(ForbiddenOperationException.class)
+    ResponseEntity<Map<String, String>> handleForbidden(ForbiddenOperationException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", exception.getMessage()));
+    }
+
     @ExceptionHandler(ServiceUnavailableException.class)
     ResponseEntity<Map<String, String>> handleServiceUnavailable(ServiceUnavailableException exception) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

@@ -40,10 +40,27 @@ if [[ "$registered" != "true" ]]; then
   exit 1
 fi
 
+patient_registered=false
+for _ in {1..30}; do
+  if curl --fail --silent \
+      --header 'Accept: application/json' \
+      http://localhost:8761/eureka/apps/CPP-PATIENT-SERVICE \
+      | jq --exit-status '.application.name == "CPP-PATIENT-SERVICE"' >/dev/null 2>&1; then
+    patient_registered=true
+    break
+  fi
+  sleep 2
+done
+
+if [[ "$patient_registered" != "true" ]]; then
+  printf 'El servicio de pacientes no se registró en Eureka.\n' >&2
+  exit 1
+fi
+
 gateway_ready=false
 for _ in {1..30}; do
   gateway_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-    http://localhost:8080/api/scheduling/specialties)"
+    http://localhost:8086/api/scheduling/specialties)"
   if [[ "$gateway_status" == "200" ]]; then
     gateway_ready=true
     break
@@ -60,7 +77,7 @@ patient_response="$(curl --fail --silent --show-error \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{
-    "dni": "76543210",
+    "dni": "87654321",
     "nombres": "Ana",
     "apellidos": "Torres",
     "fechaNacimiento": "1994-03-15",
@@ -69,13 +86,13 @@ patient_response="$(curl --fail --silent --show-error \
     "email": "ana.torres@example.com",
     "direccion": "Lima"
   }' \
-  http://localhost:8080/api/patients)"
+  http://localhost:8086/api/patients)"
 
 patient_id="$(jq --raw-output '.id' <<<"$patient_response")"
-specialty_id="$(curl --fail --silent http://localhost:8080/api/scheduling/specialties \
+specialty_id="$(curl --fail --silent http://localhost:8086/api/scheduling/specialties \
   | jq --raw-output '.[] | select(.nombre == "Psicologia Clinica") | .id')"
 psychologist_id="$(curl --fail --silent \
-  "http://localhost:8080/api/scheduling/psychologists?specialtyId=$specialty_id" \
+  "http://localhost:8086/api/scheduling/psychologists?specialtyId=$specialty_id" \
   | jq --raw-output '.[0].id')"
 
 appointment_payload="$(jq --null-input \
@@ -85,14 +102,24 @@ appointment_payload="$(jq --null-input \
   '{pacienteId: $patientId, psicologoId: $psychologistId,
     especialidadId: $specialtyId, fecha: "2026-07-13", hora: "10:00"}')"
 
-appointment_result="$(curl --silent --show-error \
-  --request POST \
-  --header 'Content-Type: application/json' \
-  --write-out $'\n%{http_code}' \
-  --data "$appointment_payload" \
-  http://localhost:8080/api/scheduling/appointments)"
-appointment_status="${appointment_result##*$'\n'}"
-appointment_response="${appointment_result%$'\n'*}"
+appointment_status="503"
+appointment_response=""
+for _ in {1..30}; do
+  appointment_result="$(curl --silent --show-error \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --write-out $'\n%{http_code}' \
+    --data "$appointment_payload" \
+    http://localhost:8086/api/scheduling/appointments)"
+  appointment_status="${appointment_result##*$'\n'}"
+  appointment_response="${appointment_result%$'\n'*}"
+
+  # Eureka puede haber registrado Pacientes antes de que Agenda refresque su cache.
+  if [[ "$appointment_status" != "503" ]]; then
+    break
+  fi
+  sleep 2
+done
 
 if [[ "$appointment_status" != "201" ]]; then
   printf 'La reserva devolvió HTTP %s: %s\n' "$appointment_status" "$appointment_response" >&2
@@ -101,21 +128,21 @@ fi
 
 jq --exit-status \
   '.estado == "PENDIENTE_PAGO" and .paciente == "Ana Torres" and
-   .pacienteHc == "HC-0001" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
+   .pacienteHc == "HC-0003" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
   <<<"$appointment_response" >/dev/null
 
 duplicate_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --request POST \
   --header 'Content-Type: application/json' \
   --data "$appointment_payload" \
-  http://localhost:8080/api/scheduling/appointments)"
+  http://localhost:8086/api/scheduling/appointments)"
 
 if [[ "$duplicate_status" != "409" ]]; then
   printf 'La reserva duplicada debía devolver HTTP 409, pero devolvió %s.\n' "$duplicate_status" >&2
   exit 1
 fi
 
-curl --fail --silent "http://localhost:8080/api/scheduling/appointments/patient/$patient_id" \
+curl --fail --silent "http://localhost:8086/api/scheduling/appointments/patient/$patient_id" \
   | jq --exit-status 'length == 1 and .[0].estado == "PENDIENTE_PAGO"' >/dev/null
 
 docker compose "${COMPOSE_ARGS[@]}" ps

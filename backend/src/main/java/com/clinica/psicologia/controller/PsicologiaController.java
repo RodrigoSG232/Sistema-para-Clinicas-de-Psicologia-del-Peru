@@ -20,6 +20,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/psicologia")
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "legacy.business-api.enabled", havingValue = "true")
 public class PsicologiaController {
 
     // Transiciones de estado que este endpoint tiene permitido aplicar.
@@ -150,6 +151,11 @@ public class PsicologiaController {
         return ResponseEntity.ok(procesoService.actualizarFase(procesoId, nuevaFase, observaciones));
     }
 
+    @PatchMapping("/procesos/{procesoId}/alta")
+    public ResponseEntity<ProcesoTerapeuticoDTO> cerrarProcesoPorAlta(@PathVariable Integer procesoId) {
+        return ResponseEntity.ok(procesoService.cerrarPorAlta(procesoId));
+    }
+
     // ─── SESIONES ──────────────────────────────────────────────────────────────
 
     @PostMapping("/sesiones")
@@ -169,6 +175,9 @@ public class PsicologiaController {
 
             Cita cita = citaRepo.findById(citaId).orElseThrow();
             ProcesoTerapeutico proceso = procesoRepo.findById(procesoId).orElseThrow();
+            if (!Boolean.TRUE.equals(proceso.getActivo())) {
+                throw new IllegalStateException("La historia clínica está cerrada por alta");
+            }
 
             Sesion sesion = Sesion.builder()
                     .cita(cita)

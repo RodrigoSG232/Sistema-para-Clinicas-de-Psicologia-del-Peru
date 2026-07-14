@@ -1,0 +1,1 @@
+package pe.com.cpp.queue.exception; public class QueueConflictException extends RuntimeException{public QueueConflictException(String m){super(m);}public QueueConflictException(String m,Throwable c){super(m,c);}}

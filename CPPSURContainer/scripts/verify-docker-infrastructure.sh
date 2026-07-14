@@ -17,7 +17,7 @@ docker compose --file "$COMPOSE_FILE" up \
 curl --fail --silent http://localhost:8888/cpp-api-gateway/default \
   | jq --exit-status '.name == "cpp-api-gateway"' >/dev/null
 
-curl --fail --silent http://localhost:8080/actuator/gateway/routes \
+curl --fail --silent http://localhost:8086/actuator/gateway/routes \
   | jq --exit-status 'length == 5' >/dev/null
 
 docker compose --file "$COMPOSE_FILE" ps

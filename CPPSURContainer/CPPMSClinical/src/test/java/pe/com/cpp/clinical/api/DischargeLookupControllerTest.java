@@ -1,0 +1,6 @@
+package pe.com.cpp.clinical.api;
+import static org.mockito.Mockito.*; import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*; import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*; import java.time.*; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest; import org.springframework.test.context.bean.override.mockito.MockitoBean; import org.springframework.test.web.servlet.MockMvc; import pe.com.cpp.clinical.service.DischargeService;
+@WebMvcTest(DischargeLookupController.class) class DischargeLookupControllerTest {
+ @Autowired MockMvc mvc; @MockitoBean DischargeService service;
+ @Test void obtainsLatestPatientDischargeReport() throws Exception{DischargeReportResponse report=new DischargeReportResponse(3,7,"ALTA","Ana","76543210","HC-1","Dra.",LocalDate.of(2026,1,1),LocalDate.of(2026,7,13),194,12,"Motivo","Resumen","Logros","Recomendaciones","Dra.",LocalDateTime.of(2026,7,13,10,0));when(service.latestReportForPatient(1)).thenReturn(report);mvc.perform(get("/api/clinical/patients/1/discharge-report/latest")).andExpect(status().isOk()).andExpect(jsonPath("$.processId").value(7));}
+}

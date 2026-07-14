@@ -14,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/public/tickets")
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "legacy.business-api.enabled", havingValue = "true")
 public class PublicTicketController {
 
     private final TicketService ticketService;

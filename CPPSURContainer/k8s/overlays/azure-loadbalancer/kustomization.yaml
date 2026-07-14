@@ -1,0 +1,69 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+
+images:
+  - name: cpp/config-server
+    newName: __ACR_LOGIN_SERVER__/cpp/config-server
+    newTag: 0.1.0
+  - name: cpp/eureka-server
+    newName: __ACR_LOGIN_SERVER__/cpp/eureka-server
+    newTag: 0.1.0
+  - name: cpp/api-gateway
+    newName: __ACR_LOGIN_SERVER__/cpp/api-gateway
+    newTag: 0.1.0
+  - name: cpp/patient-service
+    newName: __ACR_LOGIN_SERVER__/cpp/patient-service
+    newTag: 0.1.0
+  - name: cpp/scheduling-service
+    newName: __ACR_LOGIN_SERVER__/cpp/scheduling-service
+    newTag: 0.1.0
+  - name: cpp/billing-service
+    newName: __ACR_LOGIN_SERVER__/cpp/billing-service
+    newTag: 0.1.0
+  - name: cpp/clinical-service
+    newName: __ACR_LOGIN_SERVER__/cpp/clinical-service
+    newTag: 0.1.0
+  - name: cpp/queue-service
+    newName: __ACR_LOGIN_SERVER__/cpp/queue-service
+    newTag: 0.1.0
+  - name: cpp/identity-facade
+    newName: __ACR_LOGIN_SERVER__/cpp/identity-facade
+    newTag: 0.1.0
+  - name: cpp/frontend
+    newName: __ACR_LOGIN_SERVER__/cpp/frontend
+    newTag: 0.1.0
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target:
+      kind: Job
+      name: identity-db-init
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target:
+      kind: Service
+      name: api-gateway
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer
+      - op: remove
+        path: /spec/ports/0/nodePort
+  - target:
+      kind: Service
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer
+      - op: remove
+        path: /spec/ports/0/nodePort

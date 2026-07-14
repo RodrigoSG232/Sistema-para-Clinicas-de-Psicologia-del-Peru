@@ -12,6 +12,7 @@ spring:
               lower-case-service-id: true
           default-filters:
             - AddRequestHeader=X-Gateway-Request, true
+            - AddRequestHeader=X-Internal-Api-Key, ${INTERNAL_API_KEY:cpp-internal-dev-key}
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
           globalcors:
             add-to-simple-url-handler-mapping: true
@@ -32,10 +33,6 @@ spring:
                   - Content-Type
                 maxAge: 3600
           routes:
-            - id: identity-service
-              uri: lb://cpp-identity-service
-              predicates:
-                - Path=/api/identity/**
             - id: patient-service
               uri: lb://cpp-patient-service
               predicates:
@@ -52,6 +49,10 @@ spring:
               uri: lb://cpp-clinical-service
               predicates:
                 - Path=/api/clinical/**
+            - id: queue-service
+              uri: lb://cpp-queue-service
+              predicates:
+                - Path=/api/queue/**
 
 eureka:
   client:

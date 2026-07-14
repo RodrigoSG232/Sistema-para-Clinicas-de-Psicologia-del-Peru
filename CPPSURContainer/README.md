@@ -5,7 +5,7 @@ microservicios. El primer bloque implementa los servicios de infraestructura:
 
 - `CPPMSConfig`: configuracion centralizada, puerto `8888`.
 - `CPPMSEureka`: registro y descubrimiento, puerto `8761`.
-- `CPPMSGateway`: puerta de entrada HTTP, puerto `8080`.
+- `CPPMSGateway`: puerta de entrada HTTP, puerto interno `8080` y puerto local `8086`.
 
 ## Versiones base
 
@@ -36,8 +36,13 @@ Comprobaciones:
 ```text
 http://localhost:8888/cpp-api-gateway/default
 http://localhost:8761
-http://localhost:8080/actuator/health
+http://localhost:8080/actuator/health  (Gateway ejecutado manualmente)
+http://localhost:8086/actuator/health  (Gateway publicado por Docker Compose)
 ```
+
+El Gateway escucha internamente en `8080`. Docker Compose publica ese puerto
+como `127.0.0.1:8086` para que pueda convivir con el backend monolitico, que
+continua escuchando en `8080` mientras funciona como fachada JWT.
 
 Despues de ejecutar `mvn clean verify`, la integracion de los tres procesos se
 puede validar con:
@@ -49,6 +54,20 @@ puede validar con:
 El Config Server usa temporalmente un repositorio `native` incluido en su
 classpath. Esta opcion mantiene el primer entorno reproducible; posteriormente
 puede sustituirse por un repositorio Git.
+
+## Identidad durante la migracion
+
+Identidad todavia no es un microservicio independiente. La autenticacion, el
+perfil y la administracion de usuarios permanecen en el backend principal bajo
+`/api/auth/**` y `/api/admin/**`, accesible localmente por el puerto `8080`.
+Por este motivo el Gateway no declara una ruta `cpp-identity-service`: ese
+servicio no existe y mantener la ruta produciria una respuesta `503`.
+
+El Gateway Docker, publicado en `8086`, enruta exclusivamente los cinco
+dominios ya extraidos: Pacientes, Agenda, Facturacion, Clinico y Turnos. Cuando
+se ejecuta el sistema completo, Angular consume la fachada JWT en `8080` y esta
+reenvia las operaciones de negocio a los microservicios usando la clave interna
+de desarrollo.
 
 ## Docker
 
@@ -95,7 +114,7 @@ docker compose \
 
 MySQL queda disponible en el puerto local `3307` y el servicio en `8081`,
 aunque las solicitudes de negocio deben entrar por Gateway en el puerto
-`8080`.
+local `8086`.
 
 La verificacion integral crea un entorno temporal, comprueba Config Server,
 el registro en Eureka, la ruta de Gateway y la persistencia en MySQL:
@@ -166,3 +185,166 @@ comprueba que Agenda reciba el estado `PAGADA`:
 SQL Server necesita mas memoria que MySQL y PostgreSQL; para la prueba local
 el contenedor tiene un limite de 2 GB. Las credenciales de Compose son solo
 para desarrollo y deben convertirse en secretos al desplegar Kubernetes.
+
+## Cuarto microservicio de negocio: clinico
+
+`CPPMSClinical` administra procesos terapeuticos, entrevistas iniciales y
+sesiones inmutables en una base PostgreSQL exclusiva. Conserva identificadores
+y snapshots, valida pacientes y citas mediante Eureka y solicita a Agenda el
+cambio `EN_CONSULTA` a `ATENDIDA` tras registrar una sesion.
+
+Se publica bajo `/api/clinical/**`, usa el puerto `8084` y PostgreSQL se expone
+localmente en `5434`. La verificacion integral se ejecuta con:
+
+```bash
+./scripts/verify-clinical-service.sh
+```
+
+## Quinto microservicio de negocio: turnos y tickets
+
+`CPPMSQueue` administra la emisión diaria y la cola de atención en una base
+MySQL exclusiva. Una fila de secuencia por fecha se bloquea durante la emisión
+y las transiciones, garantizando correlativos únicos y un solo ticket en
+atención aun con solicitudes concurrentes.
+
+La API se publica bajo `/api/queue/**`, el servicio usa `8085` y MySQL se
+expone localmente en `3308`. La primera entrega usa REST como fuente de verdad;
+las notificaciones WebSocket quedan previstas para un cambio posterior.
+
+```bash
+./scripts/verify-queue-service.sh
+```
+
+## Kubernetes local con Kind
+
+La plataforma completa también dispone de manifiestos Kubernetes en `k8s/`.
+El entorno local usa Kind y publica el Gateway en `http://localhost:8086` y la
+aplicación Angular en `http://localhost:4200`. Config Server, Eureka, la fachada
+JWT, los servicios de negocio y las bases de datos se comunican mediante DNS de
+Kubernetes.
+
+Requisitos locales:
+
+- Docker activo.
+- `kind`.
+- `kubectl`.
+- `curl`, `rg` y `jq`.
+- Al menos 10 GB de memoria disponibles para Docker, porque la aplicación
+  completa ejecuta las bases SQL Server de identidad y facturación.
+
+Desde `CPPSURContainer`, el despliegue completo se ejecuta con:
+
+```bash
+./scripts/kind-deploy.sh
+```
+
+El script construye las diez imágenes de la aplicación y tres envoltorios
+locales de las imágenes oficiales de MySQL, PostgreSQL y SQL Server. Luego crea
+el clúster `cpp-local`, carga las imágenes sin necesitar un registro remoto,
+inicializa la base de identidad, aplica los manifiestos en orden y espera que
+los dieciséis `Deployment` estén
+disponibles. Los envoltorios no modifican los motores; sólo generan imágenes
+locales de una única plataforma que Kind puede importar de forma reproducible.
+
+La comprobación posterior valida Eureka, una ruta de cada microservicio, el
+frontend, el rechazo de solicitudes sin JWT, el login y una consulta autenticada
+que recorre Angular, Nginx, la fachada y Pacientes:
+
+```bash
+./scripts/kind-verify.sh
+```
+
+Para inspeccionar manualmente los recursos:
+
+```bash
+kubectl --context kind-cpp-local -n cpp get pods,services,pvc
+```
+
+Para eliminar el clúster y sus datos persistentes locales:
+
+```bash
+./scripts/kind-delete.sh
+```
+
+Los valores de `k8s/base/config.yaml` son credenciales exclusivas para la
+demostración local. Antes de una puesta real en producción deben reemplazarse
+por secretos externos o por el gestor de secretos de la plataforma.
+
+## Despliegue mínimo en Azure con LoadBalancer
+
+La ruta mínima para la entrega mantiene las bases de datos dentro del clúster
+Kubernetes y publica solo dos puntos HTTP mediante `LoadBalancer`:
+
+- `frontend`: URL principal para abrir Angular.
+- `api-gateway`: URL técnica para demostrar las rutas de microservicios.
+
+Las bases de datos no se publican a internet. MySQL, PostgreSQL y SQL Server se
+ejecutan como `Deployment` internos con `PersistentVolumeClaim`, igual que en
+Kind. Esta ruta sirve para exposición académica; para producción se deben usar
+bases gestionadas y secretos reales.
+
+Requisitos:
+
+- Azure CLI autenticado con `az login`.
+- Un Azure Container Registry.
+- Un clúster AKS conectado al ACR.
+- `kubectl` apuntando al clúster AKS.
+- Docker activo.
+
+Si todavía no existen ACR y AKS, se pueden crear con:
+
+```bash
+export AZURE_LOCATION=eastus
+export AZURE_RESOURCE_GROUP=rg-cpp-microservices
+export AKS_NAME=aks-cpp-microservices
+export ACR_NAME=cppms12345
+export CONFIRM_AZURE_COSTS=true
+./scripts/azure-create-resources.sh
+```
+
+`ACR_NAME` debe ser único globalmente en Azure, usar solo minúsculas y números,
+y tener entre 5 y 50 caracteres.
+
+Ejemplo de variables:
+
+```bash
+export ACR_NAME=cppregistry
+export ACR_LOGIN_SERVER=cppregistry.azurecr.io
+```
+
+Para construir y subir las diez imágenes propias al ACR:
+
+```bash
+./scripts/azure-build-push.sh
+```
+
+Para desplegar la plataforma completa en AKS:
+
+```bash
+./scripts/azure-deploy-minimal.sh
+```
+
+Cuando Azure haya asignado IP pública a los servicios `LoadBalancer`, la
+verificación muestra las URLs que van en el informe:
+
+```bash
+./scripts/azure-verify-minimal.sh
+```
+
+Las URLs resultantes tendrán esta forma:
+
+```text
+Frontend: http://<IP_PUBLICA_FRONTEND>/
+Gateway:  http://<IP_PUBLICA_GATEWAY>:8080/
+```
+
+En el índice del informe, `URL de los Microservicios Desplegados en la nube`
+puede documentarse con la URL del Gateway y una tabla de rutas:
+
+```text
+GET /api/patients/search?q=87654321
+GET /api/scheduling/specialties
+GET /api/billing/debts
+GET /api/clinical/diagnoses/cie10?q=
+GET /api/queue/public/display
+```

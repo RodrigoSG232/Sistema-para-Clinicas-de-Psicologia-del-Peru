@@ -50,7 +50,7 @@ fi
 gateway_ready=false
 for _ in {1..40}; do
   gateway_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-    http://localhost:8080/api/billing/debts)"
+    http://localhost:8086/api/billing/debts)"
   if [[ "$gateway_status" == "200" ]]; then
     gateway_ready=true
     break
@@ -68,7 +68,7 @@ patient_response="$(curl --fail-with-body --silent --show-error \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{
-    "dni": "76543210",
+    "dni": "87654321",
     "nombres": "Ana",
     "apellidos": "Torres",
     "fechaNacimiento": "1994-03-15",
@@ -77,13 +77,13 @@ patient_response="$(curl --fail-with-body --silent --show-error \
     "email": "ana.torres@example.com",
     "direccion": "Lima"
   }' \
-  http://localhost:8080/api/patients)"
+  http://localhost:8086/api/patients)"
 
 patient_id="$(jq --raw-output '.id' <<<"$patient_response")"
-specialty_id="$(curl --fail --silent http://localhost:8080/api/scheduling/specialties \
+specialty_id="$(curl --fail --silent http://localhost:8086/api/scheduling/specialties \
   | jq --raw-output '.[] | select(.nombre == "Psicologia Clinica") | .id')"
 psychologist_id="$(curl --fail --silent \
-  "http://localhost:8080/api/scheduling/psychologists?specialtyId=$specialty_id" \
+  "http://localhost:8086/api/scheduling/psychologists?specialtyId=$specialty_id" \
   | jq --raw-output '.[0].id')"
 
 appointment_payload="$(jq --null-input \
@@ -98,18 +98,18 @@ appointment_response="$(curl --fail-with-body --silent --show-error \
   --request POST \
   --header 'Content-Type: application/json' \
   --data "$appointment_payload" \
-  http://localhost:8080/api/scheduling/appointments)"
+  http://localhost:8086/api/scheduling/appointments)"
 appointment_id="$(jq --raw-output '.id' <<<"$appointment_response")"
 
 printf '3/5 Generando deuda en SQL Server desde la cita...\n'
 debt_response="$(curl --fail-with-body --silent --show-error \
   --request POST \
-  http://localhost:8080/api/billing/debts/from-appointment/"$appointment_id")"
+  http://localhost:8086/api/billing/debts/from-appointment/"$appointment_id")"
 debt_id="$(jq --raw-output '.id' <<<"$debt_response")"
 
 jq --exit-status \
   '.estado == "PENDIENTE" and .pacienteNombre == "Ana Torres" and
-   .pacienteHc == "HC-0001" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
+   .pacienteHc == "HC-0003" and .especialidad == "Psicologia Clinica" and .monto == 80.00' \
   <<<"$debt_response" >/dev/null
 
 printf '4/5 Registrando pago y actualizando Agenda...\n'
@@ -117,7 +117,7 @@ payment_response="$(curl --fail-with-body --silent --show-error \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{"medioPago":"TARJETA","tipo":"BOLETA","cajero":"caja-local"}' \
-  http://localhost:8080/api/billing/payments/"$debt_id")"
+  http://localhost:8086/api/billing/payments/"$debt_id")"
 receipt_id="$(jq --raw-output '.comprobante.id' <<<"$payment_response")"
 
 jq --exit-status \
@@ -125,20 +125,20 @@ jq --exit-status \
    .comprobante.estadoDeuda == "PAGADA" and .comprobante.medioPago == "TARJETA" and
    .comprobante.montoPagado == 80.00' <<<"$payment_response" >/dev/null
 
-curl --fail --silent http://localhost:8080/api/scheduling/appointments/"$appointment_id" \
+curl --fail --silent http://localhost:8086/api/scheduling/appointments/"$appointment_id" \
   | jq --exit-status '.estado == "PAGADA"' >/dev/null
 
-curl --fail --silent http://localhost:8080/api/billing/debts/patient/"$patient_id" \
+curl --fail --silent http://localhost:8086/api/billing/debts/patient/"$patient_id" \
   | jq --exit-status 'length == 0' >/dev/null
 
-curl --fail --silent http://localhost:8080/api/billing/receipts/"$receipt_id" \
+curl --fail --silent http://localhost:8086/api/billing/receipts/"$receipt_id" \
   | jq --exit-status '.numeroComprobante == "B-00001" and .estadoDeuda == "PAGADA"' >/dev/null
 
 duplicate_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{"medioPago":"EFECTIVO","tipo":"BOLETA"}' \
-  http://localhost:8080/api/billing/payments/"$debt_id")"
+  http://localhost:8086/api/billing/payments/"$debt_id")"
 
 if [[ "$duplicate_status" != "409" ]]; then
   printf 'El pago duplicado debía devolver HTTP 409, pero devolvió %s.\n' "$duplicate_status" >&2
