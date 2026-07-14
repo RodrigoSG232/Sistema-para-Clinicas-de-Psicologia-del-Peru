@@ -1,0 +1,287 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: cpp
+  labels: { app: patient-service, tier: business }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: patient-service }
+  template:
+    metadata:
+      labels: { app: patient-service, tier: business }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: patient-service
+          image: cpp/patient-service:0.1.0
+          imagePullPolicy: Never
+          ports: [{ name: http, containerPort: 8081 }]
+          env:
+            - { name: CONFIG_SERVER_URL, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: CONFIG_SERVER_URL } } }
+            - { name: EUREKA_DEFAULT_ZONE, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: EUREKA_DEFAULT_ZONE } } }
+            - { name: JAVA_TOOL_OPTIONS, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: JAVA_TOOL_OPTIONS } } }
+            - { name: PATIENT_DB_URL, value: 'jdbc:mysql://patient-db:3306/cpp_patients?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima' }
+            - name: PATIENT_DB_USER
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: PATIENT_DB_USER } }
+            - name: PATIENT_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: PATIENT_DB_PASSWORD } }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: patient-service, namespace: cpp, labels: { app: patient-service } }
+spec:
+  selector: { app: patient-service }
+  ports: [{ name: http, port: 8081, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduling-service
+  namespace: cpp
+  labels: { app: scheduling-service, tier: business }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: scheduling-service }
+  template:
+    metadata:
+      labels: { app: scheduling-service, tier: business }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: scheduling-service
+          image: cpp/scheduling-service:0.1.0
+          imagePullPolicy: Never
+          ports: [{ name: http, containerPort: 8082 }]
+          env:
+            - { name: CONFIG_SERVER_URL, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: CONFIG_SERVER_URL } } }
+            - { name: EUREKA_DEFAULT_ZONE, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: EUREKA_DEFAULT_ZONE } } }
+            - { name: JAVA_TOOL_OPTIONS, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: JAVA_TOOL_OPTIONS } } }
+            - { name: SCHEDULING_DB_URL, value: jdbc:postgresql://scheduling-db:5432/cpp_scheduling }
+            - name: SCHEDULING_DB_USER
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: SCHEDULING_DB_USER } }
+            - name: SCHEDULING_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: SCHEDULING_DB_PASSWORD } }
+            - name: INTERNAL_API_KEY
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: INTERNAL_API_KEY } }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: scheduling-service, namespace: cpp, labels: { app: scheduling-service } }
+spec:
+  selector: { app: scheduling-service }
+  ports: [{ name: http, port: 8082, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: cpp
+  labels: { app: billing-service, tier: business }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: billing-service }
+  template:
+    metadata:
+      labels: { app: billing-service, tier: business }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: billing-service
+          image: cpp/billing-service:0.1.0
+          imagePullPolicy: Never
+          ports: [{ name: http, containerPort: 8083 }]
+          env:
+            - { name: CONFIG_SERVER_URL, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: CONFIG_SERVER_URL } } }
+            - { name: EUREKA_DEFAULT_ZONE, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: EUREKA_DEFAULT_ZONE } } }
+            - { name: JAVA_TOOL_OPTIONS, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: JAVA_TOOL_OPTIONS } } }
+            - { name: BILLING_DB_URL, value: 'jdbc:sqlserver://billing-db:1433;databaseName=cpp_billing;encrypt=true;trustServerCertificate=true' }
+            - name: BILLING_DB_USER
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: BILLING_DB_USER } }
+            - name: BILLING_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: BILLING_DB_PASSWORD } }
+            - { name: BILLING_DB_NAME, value: cpp_billing }
+            - { name: BILLING_DB_AUTO_CREATE, value: "true" }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: billing-service, namespace: cpp, labels: { app: billing-service } }
+spec:
+  selector: { app: billing-service }
+  ports: [{ name: http, port: 8083, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clinical-service
+  namespace: cpp
+  labels: { app: clinical-service, tier: business }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: clinical-service }
+  template:
+    metadata:
+      labels: { app: clinical-service, tier: business }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: clinical-service
+          image: cpp/clinical-service:0.1.0
+          imagePullPolicy: Never
+          ports: [{ name: http, containerPort: 8084 }]
+          env:
+            - { name: CONFIG_SERVER_URL, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: CONFIG_SERVER_URL } } }
+            - { name: EUREKA_DEFAULT_ZONE, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: EUREKA_DEFAULT_ZONE } } }
+            - { name: JAVA_TOOL_OPTIONS, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: JAVA_TOOL_OPTIONS } } }
+            - { name: CLINICAL_DB_URL, value: jdbc:postgresql://clinical-db:5432/cpp_clinical }
+            - name: CLINICAL_DB_USER
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: CLINICAL_DB_USER } }
+            - name: CLINICAL_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: CLINICAL_DB_PASSWORD } }
+            - name: INTERNAL_API_KEY
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: INTERNAL_API_KEY } }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: clinical-service, namespace: cpp, labels: { app: clinical-service } }
+spec:
+  selector: { app: clinical-service }
+  ports: [{ name: http, port: 8084, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queue-service
+  namespace: cpp
+  labels: { app: queue-service, tier: business }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: queue-service }
+  template:
+    metadata:
+      labels: { app: queue-service, tier: business }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: queue-service
+          image: cpp/queue-service:0.1.0
+          imagePullPolicy: Never
+          ports: [{ name: http, containerPort: 8085 }]
+          env:
+            - { name: CONFIG_SERVER_URL, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: CONFIG_SERVER_URL } } }
+            - { name: EUREKA_DEFAULT_ZONE, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: EUREKA_DEFAULT_ZONE } } }
+            - { name: JAVA_TOOL_OPTIONS, valueFrom: { configMapKeyRef: { name: cpp-runtime-config, key: JAVA_TOOL_OPTIONS } } }
+            - { name: QUEUE_DB_URL, value: 'jdbc:mysql://queue-db:3306/cpp_queue?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima' }
+            - name: QUEUE_DB_USER
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: QUEUE_DB_USER } }
+            - name: QUEUE_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: QUEUE_DB_PASSWORD } }
+            - name: INTERNAL_API_KEY
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: INTERNAL_API_KEY } }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: queue-service, namespace: cpp, labels: { app: queue-service } }
+spec:
+  selector: { app: queue-service }
+  ports: [{ name: http, port: 8085, targetPort: http }]

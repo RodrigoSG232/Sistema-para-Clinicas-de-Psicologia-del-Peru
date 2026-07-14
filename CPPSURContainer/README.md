@@ -214,3 +214,58 @@ las notificaciones WebSocket quedan previstas para un cambio posterior.
 ```bash
 ./scripts/verify-queue-service.sh
 ```
+
+## Kubernetes local con Kind
+
+La plataforma completa también dispone de manifiestos Kubernetes en `k8s/`.
+El entorno local usa Kind y publica el `NodePort` del Gateway en
+`http://localhost:8086`. Config Server, Eureka, los servicios de negocio y las
+bases de datos permanecen accesibles solo dentro del clúster.
+
+Requisitos locales:
+
+- Docker activo.
+- `kind`.
+- `kubectl`.
+- `curl` y `rg`.
+- Al menos 8 GB de memoria disponibles para Docker, debido principalmente a
+  SQL Server.
+
+Desde `CPPSURContainer`, el despliegue completo se ejecuta con:
+
+```bash
+./scripts/kind-deploy.sh
+```
+
+El script construye las ocho imágenes de la aplicación y tres envoltorios
+locales de las imágenes oficiales de MySQL, PostgreSQL y SQL Server. Luego crea
+el clúster `cpp-local`, carga las imágenes sin necesitar un registro remoto,
+aplica los manifiestos en orden y espera que los trece `Deployment` estén
+disponibles. Los envoltorios no modifican los motores; sólo generan imágenes
+locales de una única plataforma que Kind puede importar de forma reproducible.
+
+La comprobación posterior valida los registros de Eureka y una ruta de cada
+microservicio a través del Gateway:
+
+```bash
+./scripts/kind-verify.sh
+```
+
+Para inspeccionar manualmente los recursos:
+
+```bash
+kubectl --context kind-cpp-local -n cpp get pods,services,pvc
+```
+
+Para eliminar el clúster y sus datos persistentes locales:
+
+```bash
+./scripts/kind-delete.sh
+```
+
+Los valores de `k8s/base/config.yaml` son credenciales exclusivas para la
+demostración local. Antes de desplegar en nube deben reemplazarse por secretos
+externos o por el gestor de secretos de la plataforma. En nube tampoco se deben
+publicar Eureka, Config Server ni los puertos de las bases de datos; el único
+punto de entrada público será un Ingress delante del Gateway y de la fachada de
+identidad.
