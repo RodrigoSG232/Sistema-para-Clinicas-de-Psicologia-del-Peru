@@ -6,4 +6,6 @@ resources:
   - databases.yaml
   - infrastructure.yaml
   - business-services.yaml
-
+  - identity-database.yaml
+  - identity-init-job.yaml
+  - application.yaml

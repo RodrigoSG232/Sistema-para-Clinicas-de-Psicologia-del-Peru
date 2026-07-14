@@ -218,18 +218,19 @@ las notificaciones WebSocket quedan previstas para un cambio posterior.
 ## Kubernetes local con Kind
 
 La plataforma completa también dispone de manifiestos Kubernetes en `k8s/`.
-El entorno local usa Kind y publica el `NodePort` del Gateway en
-`http://localhost:8086`. Config Server, Eureka, los servicios de negocio y las
-bases de datos permanecen accesibles solo dentro del clúster.
+El entorno local usa Kind y publica el Gateway en `http://localhost:8086` y la
+aplicación Angular en `http://localhost:4200`. Config Server, Eureka, la fachada
+JWT, los servicios de negocio y las bases de datos se comunican mediante DNS de
+Kubernetes.
 
 Requisitos locales:
 
 - Docker activo.
 - `kind`.
 - `kubectl`.
-- `curl` y `rg`.
-- Al menos 8 GB de memoria disponibles para Docker, debido principalmente a
-  SQL Server.
+- `curl`, `rg` y `jq`.
+- Al menos 10 GB de memoria disponibles para Docker, porque la aplicación
+  completa ejecuta las bases SQL Server de identidad y facturación.
 
 Desde `CPPSURContainer`, el despliegue completo se ejecuta con:
 
@@ -237,15 +238,17 @@ Desde `CPPSURContainer`, el despliegue completo se ejecuta con:
 ./scripts/kind-deploy.sh
 ```
 
-El script construye las ocho imágenes de la aplicación y tres envoltorios
+El script construye las diez imágenes de la aplicación y tres envoltorios
 locales de las imágenes oficiales de MySQL, PostgreSQL y SQL Server. Luego crea
 el clúster `cpp-local`, carga las imágenes sin necesitar un registro remoto,
-aplica los manifiestos en orden y espera que los trece `Deployment` estén
+inicializa la base de identidad, aplica los manifiestos en orden y espera que
+los dieciséis `Deployment` estén
 disponibles. Los envoltorios no modifican los motores; sólo generan imágenes
 locales de una única plataforma que Kind puede importar de forma reproducible.
 
-La comprobación posterior valida los registros de Eureka y una ruta de cada
-microservicio a través del Gateway:
+La comprobación posterior valida Eureka, una ruta de cada microservicio, el
+frontend, el rechazo de solicitudes sin JWT, el login y una consulta autenticada
+que recorre Angular, Nginx, la fachada y Pacientes:
 
 ```bash
 ./scripts/kind-verify.sh

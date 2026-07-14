@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-cpp-local}"
 KUBE_CONTEXT="kind-${CLUSTER_NAME}"
 NAMESPACE="cpp"
@@ -35,6 +36,8 @@ images=(
   cpp/billing-service:0.1.0
   cpp/clinical-service:0.1.0
   cpp/queue-service:0.1.0
+  cpp/identity-facade:0.1.0
+  cpp/frontend:0.1.0
   cpp/mysql-kind:8.4
   cpp/postgres-kind:17
   cpp/sqlserver-kind:2022
@@ -49,6 +52,10 @@ if [[ "${KIND_SKIP_BUILD:-false}" != "true" ]]; then
     --file "$ROOT_DIR/k8s/images/postgres.Dockerfile" "$ROOT_DIR"
   docker build --platform linux/amd64 --tag cpp/sqlserver-kind:2022 \
     --file "$ROOT_DIR/k8s/images/sqlserver.Dockerfile" "$ROOT_DIR"
+  docker build --platform linux/amd64 --tag cpp/identity-facade:0.1.0 \
+    --file "$PROJECT_ROOT/backend/Dockerfile" "$PROJECT_ROOT/backend"
+  docker build --platform linux/amd64 --tag cpp/frontend:0.1.0 \
+    --file "$PROJECT_ROOT/frontend/Dockerfile" "$PROJECT_ROOT/frontend"
 fi
 
 if ! kind get clusters | rg --quiet --fixed-strings --line-regexp "$CLUSTER_NAME"; then
@@ -95,6 +102,25 @@ done
 
 wait_deployment api-gateway 300s
 
+apply_file "$ROOT_DIR/k8s/base/identity-database.yaml"
+wait_deployment identity-db 600s
+
+kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" \
+  create configmap identity-db-init-script \
+  --from-file="init.sql=$PROJECT_ROOT/database/init-sqlserver.sql" \
+  --dry-run=client --output=yaml \
+  | kubectl --context "$KUBE_CONTEXT" apply -f -
+
+kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" \
+  delete job identity-db-init --ignore-not-found
+apply_file "$ROOT_DIR/k8s/base/identity-init-job.yaml"
+kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" \
+  wait --for=condition=complete job/identity-db-init --timeout=300s
+
+apply_file "$ROOT_DIR/k8s/base/application.yaml"
+wait_deployment backend 420s
+wait_deployment frontend 300s
+
 printf 'Esperando el Gateway publicado por Kind...\n'
 for _ in {1..60}; do
   if curl --fail --silent http://localhost:8086/actuator/health >/dev/null; then
@@ -106,4 +132,10 @@ curl --fail --silent http://localhost:8086/actuator/health >/dev/null
 
 kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" get pods
 printf '\nDespliegue Kind disponible en http://localhost:8086\n'
+if curl --fail --silent http://localhost:4200/ >/dev/null 2>&1; then
+  printf 'Aplicación completa disponible en http://localhost:4200\n'
+else
+  printf 'El clúster actual no publica 4200; kind-verify.sh usará port-forward.\n'
+  printf 'Los clústeres nuevos creados con kind-config.yaml sí publicarán ese puerto.\n'
+fi
 printf 'Ejecuta ./scripts/kind-verify.sh para validar todos los servicios.\n'

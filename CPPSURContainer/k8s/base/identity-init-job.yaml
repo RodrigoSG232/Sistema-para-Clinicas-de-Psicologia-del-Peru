@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: identity-db-init
+  namespace: cpp
+  labels: { app: identity-db-init, tier: database }
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels: { app: identity-db-init, tier: database }
+    spec:
+      restartPolicy: Never
+      enableServiceLinks: false
+      containers:
+        - name: sqlcmd
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          imagePullPolicy: Never
+          env:
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: cpp-local-secrets, key: IDENTITY_DB_PASSWORD } }
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              until /opt/mssql-tools18/bin/sqlcmd -C -S identity-db -U sa -P "$DB_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; do
+                sleep 3
+              done
+              /opt/mssql-tools18/bin/sqlcmd -C -S identity-db -U sa -P "$DB_PASSWORD" -b -i /work/init.sql
+          volumeMounts:
+            - name: init-script
+              mountPath: /work/init.sql
+              subPath: init.sql
+              readOnly: true
+          resources:
+            requests: { cpu: 25m, memory: 128Mi }
+            limits: { memory: 512Mi }
+      volumes:
+        - name: init-script
+          configMap: { name: identity-db-init-script }
+

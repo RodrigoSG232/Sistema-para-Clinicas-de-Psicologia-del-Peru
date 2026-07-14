@@ -31,4 +31,8 @@ stringData:
   QUEUE_DB_USER: cpp_queue
   QUEUE_DB_PASSWORD: cpp_queue_dev
   QUEUE_DB_ROOT_PASSWORD: root_queue_dev
-
+  IDENTITY_DB_USER: sa
+  IDENTITY_DB_PASSWORD: Admin123!
+  JWT_SECRET: cLinIcApsIcOlOgIaPerU2025SecretKeyLong256BitsXXXXX
+  MAIL_USERNAME: ""
+  MAIL_PASSWORD: ""

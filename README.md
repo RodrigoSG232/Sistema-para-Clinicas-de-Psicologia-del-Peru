@@ -111,6 +111,19 @@ docker compose up --build -d --wait
 El Gateway de microservicios queda en `http://localhost:8086`, la fachada JWT en
 `http://localhost:8080` y la aplicacion en `http://localhost:4200`.
 
+La aplicación completa también puede ejecutarse en Kubernetes local con Kind.
+Desde `CPPSURContainer`:
+
+```bash
+./scripts/kind-deploy.sh
+./scripts/kind-verify.sh
+```
+
+En este modo Angular queda en `http://localhost:4200`. Todas sus llamadas
+`/api/**` pasan primero por la fachada JWT, que aplica las reglas de rol y
+reenvía internamente los dominios de negocio. El Gateway continúa disponible en
+`http://localhost:8086` para comprobaciones técnicas de la infraestructura.
+
 ## Usuarios Demo
 
 Password demo: `123`
