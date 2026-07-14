@@ -80,6 +80,7 @@ services:
       - backend
     networks:
       - clinica_net
+      - cpp_network
     restart: on-failure
 
 volumes:
@@ -90,3 +91,6 @@ networks:
   clinica_net:
     name: clinica_network
     driver: bridge
+  cpp_network:
+    name: cpp-infrastructure_cpp-network
+    external: true

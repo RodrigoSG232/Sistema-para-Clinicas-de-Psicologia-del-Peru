@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: pe.com.cpp.clinical.api.ClinicalControllerTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.272 s -- in pe.com.cpp.clinical.api.ClinicalControllerTest
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.730 s -- in pe.com.cpp.clinical.api.ClinicalControllerTest
