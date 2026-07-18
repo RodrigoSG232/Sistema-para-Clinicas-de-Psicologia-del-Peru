@@ -28,7 +28,7 @@ spec:
       securityContext: { fsGroup: 10001 }
       containers:
         - name: sqlserver
-          image: mcr.microsoft.com/mssql/server:2022-latest
+          image: cpp/sqlserver-kind:2022
           imagePullPolicy: Never
           ports: [{ name: sqlserver, containerPort: 1433 }]
           env:
@@ -61,4 +61,3 @@ metadata:
 spec:
   selector: { app: identity-db }
   ports: [{ name: sqlserver, port: 1433, targetPort: sqlserver }]
-

@@ -95,6 +95,14 @@ apply_file "$ROOT_DIR/k8s/base/infrastructure.yaml"
 wait_deployment config-server 300s
 wait_deployment eureka-server 300s
 
+# El Gateway depende de Config Server para cargar sus rutas. Como Kubernetes
+# crea los deployments de infraestructura en paralelo, puede arrancar antes de
+# que Config Server esté listo y quedar vivo sin rutas. Lo reiniciamos después
+# de confirmar Config/Eureka para forzar una carga limpia de configuración.
+kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" \
+  rollout restart deployment/api-gateway
+wait_deployment api-gateway 300s
+
 apply_file "$ROOT_DIR/k8s/base/business-services.yaml"
 for deployment in patient-service scheduling-service billing-service clinical-service queue-service; do
   wait_deployment "$deployment" 600s

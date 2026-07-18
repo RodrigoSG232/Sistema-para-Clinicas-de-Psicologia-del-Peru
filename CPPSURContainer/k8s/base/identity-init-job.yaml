@@ -14,7 +14,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: sqlcmd
-          image: mcr.microsoft.com/mssql/server:2022-latest
+          image: cpp/sqlserver-kind:2022
           imagePullPolicy: Never
           env:
             - name: DB_PASSWORD
@@ -38,4 +38,3 @@ spec:
       volumes:
         - name: init-script
           configMap: { name: identity-db-init-script }
-

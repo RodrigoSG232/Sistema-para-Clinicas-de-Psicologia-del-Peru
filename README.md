@@ -257,3 +257,146 @@ Finalmente abre:
 ```text
 http://localhost:4200
 ```
+
+## 13. Levantar con Kubernetes local usando Kind
+
+El proyecto también puede levantarse localmente con Kubernetes usando Kind.
+Antes de usar Kind, apaga los contenedores de Docker Compose para evitar cruce
+de puertos como `4200`, `8761` y `8086`.
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose down
+```
+
+Luego apaga los microservicios:
+
+```bash
+cd CPPSURContainer
+docker compose \
+  -f compose.infrastructure.yaml \
+  -f compose.patient.yaml \
+  -f compose.scheduling.yaml \
+  -f compose.billing.yaml \
+  -f compose.clinical.yaml \
+  -f compose.queue.yaml \
+  down
+```
+
+Para ejecutar Kind se necesita:
+
+- Docker activo.
+- `kind`.
+- `kubectl`.
+- `curl`.
+- `jq`.
+- `ripgrep` (`rg`).
+
+En Linux, instala las herramientas necesarias según tu distribución. En Ubuntu
+o Debian:
+
+```bash
+sudo apt update
+sudo apt install curl jq ripgrep -y
+```
+
+Luego verifica:
+
+```bash
+docker info
+kind --version
+kubectl version --client
+rg --version
+jq --version
+```
+
+Ejecuta el despliegue:
+
+```bash
+./scripts/kind-deploy.sh
+```
+
+Verifica:
+
+```bash
+./scripts/kind-verify.sh
+```
+
+Para eliminar el clúster local:
+
+```bash
+./scripts/kind-delete.sh
+```
+
+### Nota para usuarios de Windows
+
+En Windows se recomienda ejecutar Kind desde WSL2, no desde PowerShell ni desde
+Git Bash.
+
+Pasos recomendados:
+
+1. Instalar Docker Desktop.
+2. Instalar WSL2.
+3. Instalar Ubuntu desde Microsoft Store.
+4. Abrir Docker Desktop.
+5. Ir a `Settings > Resources > WSL Integration`.
+6. Activar la integración con Ubuntu.
+7. Aplicar cambios y reiniciar Docker Desktop.
+
+Dentro de Ubuntu/WSL, verifica Docker:
+
+```bash
+docker info
+```
+
+Instala herramientas:
+
+```bash
+sudo apt update
+sudo apt install curl jq ripgrep dos2unix -y
+```
+
+Instala `kubectl`:
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+Instala `kind`:
+
+```bash
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+```
+
+Clona el repositorio dentro del sistema de archivos de WSL, por ejemplo en
+`/home/tu_usuario/`, no dentro de `/mnt/c/`.
+
+Luego entra al proyecto:
+
+```bash
+cd ~/Sistema-para-Clinicas-de-Psicologia-del-Peru/CPPSURContainer
+```
+
+Si los scripts no tienen permiso de ejecución:
+
+```bash
+chmod +x scripts/kind-deploy.sh scripts/kind-verify.sh scripts/kind-delete.sh
+```
+
+Si los scripts tienen saltos de línea de Windows:
+
+```bash
+dos2unix scripts/kind-deploy.sh scripts/kind-verify.sh scripts/kind-delete.sh
+```
+
+Finalmente ejecuta:
+
+```bash
+./scripts/kind-deploy.sh
+./scripts/kind-verify.sh
+```

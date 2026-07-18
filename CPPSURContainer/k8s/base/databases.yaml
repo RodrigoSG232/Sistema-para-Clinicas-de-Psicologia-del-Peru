@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:8.4
+          image: cpp/mysql-kind:8.4
           imagePullPolicy: Never
           ports: [{ name: mysql, containerPort: 3306 }]
           env:
@@ -84,7 +84,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:17-alpine
+          image: cpp/postgres-kind:17
           imagePullPolicy: Never
           ports: [{ name: postgres, containerPort: 5432 }]
           env:
@@ -141,7 +141,7 @@ spec:
       securityContext: { fsGroup: 10001 }
       containers:
         - name: sqlserver
-          image: mcr.microsoft.com/mssql/server:2022-latest
+          image: cpp/sqlserver-kind:2022
           imagePullPolicy: Never
           ports: [{ name: sqlserver, containerPort: 1433 }]
           env:
@@ -196,7 +196,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:17-alpine
+          image: cpp/postgres-kind:17
           imagePullPolicy: Never
           ports: [{ name: postgres, containerPort: 5432 }]
           env:
@@ -252,7 +252,7 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:8.4
+          image: cpp/mysql-kind:8.4
           imagePullPolicy: Never
           ports: [{ name: mysql, containerPort: 3306 }]
           env:
